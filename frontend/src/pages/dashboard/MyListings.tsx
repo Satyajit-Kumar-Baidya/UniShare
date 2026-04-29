@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useApiQuery } from "../../hooks/useApiQuery";
 import { getMarketplaceItems, type MarketplaceItem } from "../../lib/api";
+import ResponsiveImage from "../../components/ResponsiveImage";
 
 export default function MyListings() {
   const { user } = useAuth();
@@ -29,7 +30,15 @@ export default function MyListings() {
           {myListings.map(item => (
             <div key={item.id} className="border border-gray-200 rounded-2xl overflow-hidden group">
               <div className="aspect-square bg-gray-100 relative">
-                <img src={item.image} alt={item.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                <ResponsiveImage
+                  src={item.image}
+                  alt={item.title}
+                  className="w-full h-full object-cover"
+                  sizes="(min-width: 1024px) 220px, (min-width: 640px) 45vw, 90vw"
+                  loading="lazy"
+                  decoding="async"
+                  referrerPolicy="no-referrer"
+                />
                 <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-md text-xs font-medium text-gray-700">Active</div>
               </div>
               <div className="p-4">

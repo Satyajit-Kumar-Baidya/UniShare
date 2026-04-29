@@ -29,12 +29,15 @@ const Cookies = lazy(() => import('./pages/Cookies'));
 const Auth = lazy(() => import('./pages/Auth'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const DashboardLayout = lazy(() => import('./components/DashboardLayout'));
+const AdminLayout = lazy(() => import('./components/AdminLayout'));
 const DashboardOverview = lazy(() => import('./pages/dashboard/Overview'));
 const DashboardListings = lazy(() => import('./pages/dashboard/MyListings'));
 const DashboardGroups = lazy(() => import('./pages/dashboard/MyGroups'));
 const DashboardOrders = lazy(() => import('./pages/dashboard/OrderHistory'));
 const DashboardSaved = lazy(() => import('./pages/dashboard/SavedItems'));
 const DashboardSettings = lazy(() => import('./pages/dashboard/Settings'));
+const AdminVerificationQueue = lazy(() => import('./pages/admin/VerificationQueue'));
+const AdminManageUsers = lazy(() => import('./pages/admin/ManageUsers'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Cart = lazy(() => import('./pages/Cart'));
 const Checkout = lazy(() => import('./pages/Checkout'));
@@ -85,6 +88,17 @@ export default function App() {
                   <Route path="orders" element={<DashboardOrders />} />
                   <Route path="saved" element={<DashboardSaved />} />
                   <Route path="settings" element={<DashboardSettings />} />
+                </Route>
+                <Route
+                  path="admin"
+                  element={withPageLoader(
+                    <ProtectedRoute requiredRole="admin">
+                      <AdminLayout />
+                    </ProtectedRoute>
+                  )}
+                >
+                  <Route index element={<AdminVerificationQueue />} />
+                  <Route path="users" element={<AdminManageUsers />} />
                 </Route>
                 <Route path="profile" element={withPageLoader(<ProtectedRoute><Profile /></ProtectedRoute>)} />
                 <Route path="cart" element={withPageLoader(<ProtectedRoute><Cart /></ProtectedRoute>)} />

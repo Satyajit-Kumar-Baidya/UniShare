@@ -1,10 +1,11 @@
 import React, { useRef, Suspense } from "react";
-import { Users, Package, LayoutDashboard, ShoppingBag, Heart, Settings, LogOut, Camera, User } from "lucide-react";
+import { Users, Package, LayoutDashboard, ShoppingBag, Heart, Settings, LogOut, Camera, User, ShieldCheck } from "lucide-react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { useApiQuery } from "../hooks/useApiQuery";
 import { getMarketplaceItems, getSubscriptionGroups, type MarketplaceItem, type SubscriptionGroup } from "../lib/api";
 import PageLoader from "./PageLoader";
+import ResponsiveImage from "./ResponsiveImage";
 
 export default function DashboardLayout() {
   const navigate = useNavigate();
@@ -47,6 +48,9 @@ export default function DashboardLayout() {
     { to: "/dashboard/orders", label: "Order History", icon: ShoppingBag },
     { to: "/dashboard/saved", label: "Saved Items", icon: Heart },
     { to: "/dashboard/settings", label: "Settings", icon: Settings },
+    ...(user?.role === "admin"
+      ? [{ to: "/admin", label: "Admin Portal", icon: ShieldCheck }]
+      : []),
   ];
 
   return (
@@ -58,7 +62,14 @@ export default function DashboardLayout() {
            <div className="relative w-24 h-24 mx-auto mb-4" onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}>
             <div className="w-24 h-24 bg-gray-100 rounded-full overflow-hidden flex items-center justify-center border-2 border-white shadow-sm hover:brightness-90 transition-all">
               {user?.avatar ? (
-                <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                <ResponsiveImage
+                  src={user.avatar}
+                  alt={user.name || 'Member'}
+                  className="w-full h-full object-cover"
+                  sizes="96px"
+                  loading="lazy"
+                  decoding="async"
+                />
               ) : (
                 <User className="w-10 h-10 text-gray-400" />
               )}

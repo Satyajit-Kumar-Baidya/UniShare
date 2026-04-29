@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, LogOut, Settings, User } from 'lucide-react';
+import { LayoutDashboard, LogOut, Settings, ShieldCheck, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { AnimatePresence, motion } from 'motion/react';
+import ResponsiveImage from './ResponsiveImage';
 
 export default function ProfileMenu() {
   const [isOpen, setIsOpen] = useState(false);
@@ -53,7 +54,14 @@ export default function ProfileMenu() {
         className="w-9 h-9 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-200 transition-colors overflow-hidden"
       >
         {user?.avatar ? (
-          <img src={user.avatar} alt={user?.name || 'Member'} className="w-full h-full object-cover" />
+          <ResponsiveImage
+            src={user.avatar}
+            alt={user?.name || 'Member'}
+            className="w-full h-full object-cover"
+            sizes="36px"
+            loading="lazy"
+            decoding="async"
+          />
         ) : (
           <span className="text-[11px] font-semibold text-gray-700">{userInitials || <User className="w-4 h-4" />}</span>
         )}
@@ -101,6 +109,19 @@ export default function ProfileMenu() {
                     ) : null}
                   </Link>
                 </motion.div>
+
+                {user?.role === 'admin' ? (
+                  <motion.div variants={menuItemVariants}>
+                    <Link
+                      to="/admin"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <ShieldCheck className="h-4 w-4" />
+                      Admin Portal
+                    </Link>
+                  </motion.div>
+                ) : null}
 
                 <motion.div variants={menuItemVariants}>
                   <Link
@@ -165,7 +186,14 @@ export default function ProfileMenu() {
               <div className="mb-4 flex items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center overflow-hidden">
                   {user?.avatar ? (
-                    <img src={user.avatar} alt={user?.name || 'Member'} className="w-full h-full object-cover" />
+                    <ResponsiveImage
+                      src={user.avatar}
+                      alt={user?.name || 'Member'}
+                      className="w-full h-full object-cover"
+                      sizes="40px"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   ) : (
                     <span className="text-xs font-semibold text-gray-700">{userInitials || 'M'}</span>
                   )}
@@ -194,6 +222,18 @@ export default function ProfileMenu() {
                     ) : null}
                   </Link>
                 </motion.div>
+                {user?.role === 'admin' ? (
+                  <motion.div variants={menuItemVariants}>
+                    <Link
+                      to="/admin"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-gray-50"
+                    >
+                      <ShieldCheck className="h-4 w-4" />
+                      Admin Portal
+                    </Link>
+                  </motion.div>
+                ) : null}
                 <motion.div variants={menuItemVariants}>
                   <Link
                     to="/profile?tab=overview"

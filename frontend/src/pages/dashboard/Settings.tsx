@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
-import { Check } from "lucide-react";
+import { BadgeCheck, Check, Clock, ShieldAlert } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { getMockUserByEmail } from "../../lib/api";
 
 export default function Settings() {
   const { user, updateUser } = useAuth();
@@ -14,6 +15,60 @@ export default function Settings() {
   const [editGraduationYear, setEditGraduationYear] = useState(user?.graduationYear || "");
   const [editBio, setEditBio] = useState(user?.bio || "");
   const [isSaved, setIsSaved] = useState(false);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const syncUser = async () => {
+      if (!user?.email) {
+        return;
+      }
+      const latest = await getMockUserByEmail(user.email);
+      if (latest && isActive) {
+        updateUser(latest);
+      }
+    };
+
+    void syncUser();
+    return () => {
+      isActive = false;
+    };
+  }, [user?.email]);
+
+  const formatDate = (value?: string, fallback = "Not submitted") =>
+    value
+      ? new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+      : fallback;
+
+  const verificationStatus = user?.verificationStatus ?? (user?.isVerified ? "verified" : "unverified");
+  const statusConfig = {
+    verified: {
+      label: "Verified",
+      message: "Your UIU account is approved for marketplace access.",
+      icon: BadgeCheck,
+      styles: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    },
+    pending: {
+      label: "Pending review",
+      message: "Admin review in progress. We will notify you when approved.",
+      icon: Clock,
+      styles: "border-amber-200 bg-amber-50 text-amber-700",
+    },
+    rejected: {
+      label: "Rejected",
+      message: "Your submission needs attention. Review the admin note below.",
+      icon: ShieldAlert,
+      styles: "border-rose-200 bg-rose-50 text-rose-700",
+    },
+    unverified: {
+      label: "Not submitted",
+      message: "Submit your UIU verification at signup to unlock marketplace access.",
+      icon: ShieldAlert,
+      styles: "border-orange-200 bg-orange-50 text-orange-700",
+    },
+  } as const;
+  const verification = statusConfig[verificationStatus];
+  const VerificationIcon = verification.icon;
 
   const handleSaveProfile = () => {
     updateUser({ 
@@ -77,6 +132,52 @@ export default function Settings() {
           <label className="block text-sm font-medium text-gray-700 mb-1">Bio / About Me</label>
           <textarea value={editBio} onChange={(e) => setEditBio(e.target.value)} rows={3} placeholder="Tell others a bit about yourself..." className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-gray-900 focus:border-transparent outline-none transition-all resize-none" />
         </div>
+      </div>
+
+      <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-6">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <span className={`mt-1 inline-flex h-10 w-10 items-center justify-center rounded-xl border ${verification.styles}`}>
+              <VerificationIcon className="h-5 w-5" />
+            </span>
+            <div>
+              <h4 className="text-sm font-semibold text-gray-900">Verification Status</h4>
+              <p className="text-xs text-gray-600 mt-1">{verification.message}</p>
+            </div>
+          </div>
+          <span className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-semibold border ${verification.styles}`}>
+            {verification.label}
+          </span>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">UIU Email</p>
+            <p className="text-gray-900 mt-1">{user?.uiuEmail || "Not provided"}</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">UIU ID Number</p>
+            <p className="text-gray-900 mt-1">{user?.uiuIdNumber || "Not provided"}</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">ID Card</p>
+            <p className="text-gray-900 mt-1">{user?.uiuIdImage ? "Uploaded" : "Not provided"}</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Submitted</p>
+            <p className="text-gray-900 mt-1">{formatDate(user?.verificationSubmittedAt, "Not submitted")}</p>
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Reviewed</p>
+            <p className="text-gray-900 mt-1">{formatDate(user?.verificationReviewedAt, "Not reviewed")}</p>
+          </div>
+        </div>
+
+        {verificationStatus === "rejected" && user?.verificationNote ? (
+          <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            Admin note: <span className="font-semibold text-rose-900">{user.verificationNote}</span>
+          </div>
+        ) : null}
       </div>
 
       <div className="flex items-center gap-4">

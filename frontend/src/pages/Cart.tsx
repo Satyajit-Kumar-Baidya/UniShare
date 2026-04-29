@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { getCartPreviewItems, type MarketplaceItem } from '../lib/api';
 import { useApiQuery } from '../hooks/useApiQuery';
 import QueryErrorState from '../components/QueryErrorState';
+import ResponsiveImage from '../components/ResponsiveImage';
 
 export default function Cart() {
   const { data: cartItems = [], isError, refetch } = useApiQuery<MarketplaceItem[]>({
@@ -37,7 +38,15 @@ export default function Cart() {
           {cartItems.map((item) => (
             <div key={item.id} className="flex flex-col sm:flex-row gap-4 bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
               <div className="w-24 h-24 rounded-xl overflow-hidden bg-gray-100 shrink-0">
-                <img src={item.image} alt={item.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                <ResponsiveImage
+                  src={item.image}
+                  alt={item.title}
+                  className="w-full h-full object-cover"
+                  sizes="96px"
+                  loading="lazy"
+                  decoding="async"
+                  referrerPolicy="no-referrer"
+                />
               </div>
               <div className="flex-1 flex flex-col justify-between">
                 <div className="flex justify-between items-start">

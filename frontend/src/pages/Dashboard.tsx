@@ -6,6 +6,7 @@ import { useSocket } from '../context/SocketContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { getMarketplaceItems, getSubscriptionGroups, type MarketplaceItem, type SubscriptionGroup } from '../lib/api';
 import { useApiQuery } from '../hooks/useApiQuery';
+import ResponsiveImage from '../components/ResponsiveImage';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -108,7 +109,14 @@ export default function Dashboard() {
           <div className="relative z-10 flex items-center gap-5">
             <div className="hidden sm:flex h-20 w-20 rounded-full overflow-hidden border-[3px] border-white shadow-sm shrink-0 bg-gray-100 items-center justify-center">
               {user?.avatar ? (
-                <img src={user.avatar} alt={user?.name || ''} className="h-full w-full object-cover" />
+                <ResponsiveImage
+                  src={user.avatar}
+                  alt={user?.name || 'Member'}
+                  className="h-full w-full object-cover"
+                  sizes="80px"
+                  loading="lazy"
+                  decoding="async"
+                />
               ) : (
                 <User className="h-8 w-8 text-gray-400" />
               )}

@@ -5,6 +5,7 @@ import { useFavorites } from "../../context/FavoritesContext";
 import { useApiQuery } from "../../hooks/useApiQuery";
 import { getMarketplaceItems, type MarketplaceItem } from "../../lib/api";
 import { Link } from "react-router-dom";
+import ResponsiveImage from "../../components/ResponsiveImage";
 
 export default function SavedItems() {
   const { favorites, toggleFavorite } = useFavorites();
@@ -24,7 +25,15 @@ export default function SavedItems() {
           {savedItems.map(item => (
             <div key={item.id} className="border border-gray-200 rounded-2xl overflow-hidden group relative">
               <div className="aspect-square bg-gray-100 relative">
-                <img src={item.image} alt={item.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                <ResponsiveImage
+                  src={item.image}
+                  alt={item.title}
+                  className="w-full h-full object-cover"
+                  sizes="(min-width: 1024px) 220px, (min-width: 640px) 45vw, 90vw"
+                  loading="lazy"
+                  decoding="async"
+                  referrerPolicy="no-referrer"
+                />
                 <button onClick={(e) => { e.preventDefault(); toggleFavorite(item.id); }} className="absolute bottom-2 right-2 p-2 bg-white/90 backdrop-blur-sm rounded-full shadow-sm hover:scale-110 transition-transform z-10">
                   <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
                 </button>

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { motion } from "motion/react";
 import { useAuth } from "../context/AuthContext";
@@ -6,6 +5,7 @@ import { MapPin, GraduationCap, Calendar, BookOpen, User } from "lucide-react";
 import { useApiQuery } from "../hooks/useApiQuery";
 import { getMarketplaceItems, type MarketplaceItem } from "../lib/api";
 import { Link } from "react-router-dom";
+import ResponsiveImage from "../components/ResponsiveImage";
 
 export default function Profile() {
   const { user } = useAuth();
@@ -24,14 +24,22 @@ export default function Profile() {
         animate={{ opacity: 1, y: 0 }}
         className="bg-white rounded-3xl border border-gray-200 overflow-hidden shadow-sm"
       >
-        <div className="h-48 bg-gradient-to-r from-indigo-100 to-blue-50 w-full relative">
+        {/* Cover Photo Area */}
+        <div className="h-48 bg-linear-to-r from-indigo-100 to-blue-50 w-full relative">
         </div>
         
         <div className="px-8 pb-8">
           <div className="relative flex justify-between items-end -mt-16 mb-6">
-            <div className="w-32 h-32 bg-white rounded-full p-1 border-4 border-white shadow-sm z-10 flex-shrink-0">
+            <div className="w-32 h-32 bg-white rounded-full p-1 border-4 border-white shadow-sm z-10 shrink-0">
               {user?.avatar ? (
-                <img src={user?.avatar} alt={user?.name} className="w-full h-full rounded-full object-cover" />
+                <ResponsiveImage
+                  src={user.avatar}
+                  alt={user.name || 'Profile avatar'}
+                  className="w-full h-full rounded-full object-cover"
+                  sizes="128px"
+                  loading="lazy"
+                  decoding="async"
+                />
               ) : (
                 <div className="w-full h-full bg-gray-100 rounded-full flex items-center justify-center">
                   <User className="w-12 h-12 text-gray-400" />
@@ -95,12 +103,20 @@ export default function Profile() {
            {myListings.length > 0 ? (
              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                 {myListings.map(item => (
-                  <Link to={`+"/marketplace/"+item.id`} key={item.id} className="block group">
+                  <Link to={`/marketplace/${item.id}`} key={item.id} className="block group">
                     <div className="aspect-square bg-gray-100 rounded-2xl overflow-hidden mb-3 relative">
-                      <img src={item.image} alt={item.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" referrerPolicy="no-referrer" />
+                      <ResponsiveImage
+                        src={item.image}
+                        alt={item.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        sizes="(min-width: 1024px) 220px, (min-width: 640px) 45vw, 90vw"
+                        loading="lazy"
+                        decoding="async"
+                        referrerPolicy="no-referrer"
+                      />
                     </div>
                     <h4 className="font-medium text-gray-900 line-clamp-1 group-hover:text-indigo-600 transition-colors">{item.title}</h4>
-                    <p className="text-gray-900 font-semibold">${`item.price`}</p>
+                    <p className="text-gray-900 font-semibold">${item.price}</p>
                   </Link>
                 ))}
              </div>
@@ -114,4 +130,3 @@ export default function Profile() {
     </div>
   );
 }
-

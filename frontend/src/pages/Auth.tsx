@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { ShieldCheck, GraduationCap, Mail, Lock, ArrowRight, Building, User as UserIcon, CheckCircle2, Chrome, Github } from 'lucide-react';
+import { ShieldCheck, GraduationCap, Mail, Lock, ArrowRight, Building, User as UserIcon, CheckCircle2, Chrome, Github, IdCard, UploadCloud } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { getMockUserByEmail, submitVerificationRequest } from '../lib/api';
 
 type SocialProvider = 'google' | 'github';
 
@@ -14,6 +15,10 @@ export default function Auth() {
   // Form states
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [uiuEmail, setUiuEmail] = useState('');
+  const [uiuIdNumber, setUiuIdNumber] = useState('');
+  const [uiuIdImage, setUiuIdImage] = useState('');
+  const [uiuIdFileName, setUiuIdFileName] = useState('');
   const [university, setUniversity] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -32,6 +37,10 @@ export default function Auth() {
     setIsSuccess(false);
     setSocialLoading(null);
     setFieldErrors({});
+    setUiuEmail('');
+    setUiuIdNumber('');
+    setUiuIdImage('');
+    setUiuIdFileName('');
   }, [location.pathname]);
 
   // Get the page they were trying to visit, or default to dashboard
@@ -57,13 +66,26 @@ export default function Auth() {
         errors.name = 'Full name is required.';
       }
 
+      if (!uiuEmail.trim()) {
+        errors.uiuEmail = 'UIU email is required.';
+      } else if (!/^\S+@\S+\.\S+$/.test(uiuEmail.trim())) {
+        errors.uiuEmail = 'Enter a valid UIU email.';
+      }
+
+      if (!uiuIdNumber.trim()) {
+        errors.uiuIdNumber = 'UIU ID number is required.';
+      }
+
+      if (!uiuIdImage) {
+        errors.uiuIdImage = 'Upload your UIU ID card.';
+      }
+
       if (!confirmPassword) {
         errors.confirmPassword = 'Please confirm your password.';
       } else if (password !== confirmPassword) {
         errors.confirmPassword = 'Passwords do not match.';
       }
     }
-
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -77,6 +99,22 @@ export default function Auth() {
       delete next[field];
       return next;
     });
+  };
+
+  const handleIdUpload = (file?: File) => {
+    if (!file) {
+      setUiuIdImage('');
+      setUiuIdFileName('');
+      return;
+    }
+
+    setUiuIdFileName(file.name);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setUiuIdImage(reader.result as string);
+      clearFieldError('uiuIdImage');
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSocialAuth = (provider: SocialProvider) => {
@@ -111,48 +149,63 @@ export default function Auth() {
     
     if (!isLogin) {
       setIsLoading(true);
-      // Simulate API call for signup
-      setTimeout(() => {
-        // Save name for mock login later
-        localStorage.setItem(`mock_name_${email}`, name);
-        setIsLoading(false);
+      try {
+        await submitVerificationRequest({
+          name: name.trim(),
+          email: email.trim(),
+          uiuEmail: uiuEmail.trim(),
+          uiuIdNumber: uiuIdNumber.trim(),
+          uiuIdImage,
+        });
+        localStorage.setItem(`mock_name_${email.trim()}`, name.trim());
         setIsSuccess(true);
-      }, 800);
+      } catch (err) {
+        setError('Unable to submit verification. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
       return;
     }
 
     setIsLoading(true);
+    try {
+      const normalizedEmail = email.trim();
+      const savedName = localStorage.getItem(`mock_name_${normalizedEmail}`);
+      const existingUser = await getMockUserByEmail(normalizedEmail);
+      let calculatedName = savedName || name.trim();
 
-    // Simulate API call for login
-    setTimeout(() => {
-      const savedName = localStorage.getItem(`mock_name_${email}`);
-      
-      // Calculate display name:
-      // 1. Used explicit name (if they were on signup page typing it in)
-      // 2. Fallback to extracting capitalized name from their email address
-      let calculatedName = savedName || name;
-      if (!calculatedName && email) {
-        const [localPart] = email.split('@');
+      if (!calculatedName && normalizedEmail) {
+        const [localPart] = normalizedEmail.split('@');
         if (localPart) {
           calculatedName = localPart
             .replace(/[._\-0-9]+/g, ' ')
             .trim()
             .split(' ')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
             .join(' ');
         }
       }
 
-      login({
-        id: Math.random().toString(36).substring(7),
-        name: calculatedName || "Member",
-        email: email,
-        joinedDate: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
-      });
+      if (existingUser) {
+        login({
+          ...existingUser,
+          name: existingUser.name || calculatedName || 'Member',
+        });
+      } else {
+        login({
+          id: Math.random().toString(36).substring(7),
+          name: calculatedName || 'Member',
+          email: normalizedEmail,
+          joinedDate: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        });
+      }
 
-      setIsLoading(false);
       navigate(from, { replace: true });
-    }, 800);
+    } catch (err) {
+      setError('Unable to sign in. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const toggleMode = () => {
@@ -171,12 +224,14 @@ export default function Auth() {
             <CheckCircle2 className="h-10 w-10 text-emerald-500" />
           </div>
           <h2 className="text-3xl font-semibold text-gray-900 tracking-tight mb-4 font-display">
-            Verify your email
+            Verification submitted
           </h2>
-          <p className="text-gray-500 leading-relaxed mb-8">
-            We've sent a verification link to <span className="font-medium text-gray-900">{email}</span>. 
-            Please check your inbox to verify and activate your account.
+          <p className="text-gray-500 leading-relaxed mb-6">
+            Your UIU verification is now in the admin review queue. We will notify you after approval.
           </p>
+          <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            Submitted for <span className="font-semibold text-emerald-900">{uiuEmail || email}</span>
+          </div>
           <div className="space-y-4">
             <button
               onClick={() => {
@@ -185,11 +240,8 @@ export default function Auth() {
               }}
               className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
             >
-              Back to login
+              Go to login
             </button>
-            <p className="text-sm text-gray-500">
-              Didn't receive the email? <button className="text-indigo-600 font-medium hover:underline">Click to resend</button>
-            </p>
           </div>
         </motion.div>
       </div>
@@ -211,7 +263,7 @@ export default function Auth() {
             {isLogin ? 'Welcome back' : 'Join UniShare'}
           </h2>
           <p className="mt-2 text-sm text-gray-500">
-            {isLogin ? 'Enter your details to access your account.' : 'Create an account and start trading smarter.'}
+            {isLogin ? 'Enter your details to access your account.' : 'Create your UIU account and submit verification to start trading.'}
           </p>
         </div>
 
@@ -219,7 +271,7 @@ export default function Auth() {
           <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex gap-3 items-start">
             <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
             <p className="text-xs text-emerald-800 leading-relaxed">
-              <strong>Flexible registration.</strong> You can use any valid email address to create your UniShare account.
+              <strong>UIU verification required.</strong> Use any email for your account, but UIU email and ID are required for approval.
             </p>
           </div>
         )}
@@ -302,7 +354,7 @@ export default function Auth() {
                   {fieldErrors.name ? <p className="mt-1 text-xs text-rose-600">{fieldErrors.name}</p> : null}
                 </div>
                 <div>
-                  <label htmlFor="university" className="block text-sm font-medium text-gray-700 mb-1">Institution (Optional)</label>
+                  <label htmlFor="university" className="block text-sm font-medium text-gray-700 mb-1">Department / Program (Optional)</label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <Building className="h-4 w-4 text-gray-400" />
@@ -314,7 +366,7 @@ export default function Auth() {
                       value={university}
                       onChange={(e) => setUniversity(e.target.value)}
                       className="appearance-none relative block w-full pl-10 pr-4 py-3 bg-white border border-gray-300 placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent sm:text-sm transition-all"
-                      placeholder="Campus, company, or organization"
+                      placeholder="e.g. CSE, EEE, BBA"
                     />
                   </div>
                 </div>
@@ -343,6 +395,77 @@ export default function Auth() {
               </div>
               {fieldErrors.email ? <p className="mt-1 text-xs text-rose-600">{fieldErrors.email}</p> : null}
             </div>
+            {!isLogin && (
+              <>
+                <div>
+                  <label htmlFor="uiu-email" className="block text-sm font-medium text-gray-700 mb-1">UIU Email Address</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Mail className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      id="uiu-email"
+                      name="uiu-email"
+                      type="email"
+                      required
+                      value={uiuEmail}
+                      onChange={(e) => {
+                        setUiuEmail(e.target.value);
+                        clearFieldError('uiuEmail');
+                      }}
+                      className={`appearance-none relative block w-full pl-10 pr-4 py-3 bg-white border placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent sm:text-sm transition-all ${fieldErrors.uiuEmail ? 'border-rose-400 focus:ring-rose-400' : 'border-gray-300 focus:ring-indigo-500'}`}
+                      placeholder="yourname@uiu.ac.bd"
+                    />
+                  </div>
+                  {fieldErrors.uiuEmail ? <p className="mt-1 text-xs text-rose-600">{fieldErrors.uiuEmail}</p> : null}
+                </div>
+                <div>
+                  <label htmlFor="uiu-id" className="block text-sm font-medium text-gray-700 mb-1">UIU ID Number</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <IdCard className="h-4 w-4 text-gray-400" />
+                    </div>
+                    <input
+                      id="uiu-id"
+                      name="uiu-id"
+                      type="text"
+                      required
+                      value={uiuIdNumber}
+                      onChange={(e) => {
+                        setUiuIdNumber(e.target.value);
+                        clearFieldError('uiuIdNumber');
+                      }}
+                      className={`appearance-none relative block w-full pl-10 pr-4 py-3 bg-white border placeholder-gray-400 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:border-transparent sm:text-sm transition-all ${fieldErrors.uiuIdNumber ? 'border-rose-400 focus:ring-rose-400' : 'border-gray-300 focus:ring-indigo-500'}`}
+                      placeholder="UIU-12345"
+                    />
+                  </div>
+                  {fieldErrors.uiuIdNumber ? <p className="mt-1 text-xs text-rose-600">{fieldErrors.uiuIdNumber}</p> : null}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">UIU ID Card Upload</label>
+                  <div className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 bg-white ${fieldErrors.uiuIdImage ? 'border-rose-400' : 'border-gray-300'}`}>
+                    <div className="flex items-center gap-3 text-sm text-gray-600">
+                      <UploadCloud className="h-4 w-4 text-gray-400" />
+                      <span>{uiuIdFileName || 'Upload a clear photo of your UIU ID card'}</span>
+                    </div>
+                    <label
+                      htmlFor="uiu-id-upload"
+                      className="cursor-pointer rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-gray-800 transition-colors"
+                    >
+                      {uiuIdFileName ? 'Replace' : 'Upload'}
+                    </label>
+                  </div>
+                  <input
+                    id="uiu-id-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handleIdUpload(e.target.files?.[0])}
+                  />
+                  {fieldErrors.uiuIdImage ? <p className="mt-1 text-xs text-rose-600">{fieldErrors.uiuIdImage}</p> : null}
+                </div>
+              </>
+            )}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <div className="relative">
@@ -444,3 +567,12 @@ export default function Auth() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+

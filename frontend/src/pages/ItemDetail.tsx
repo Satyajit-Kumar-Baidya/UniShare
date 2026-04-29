@@ -2,6 +2,7 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Star, ShieldCheck, ShoppingCart, ArrowLeft, MessageSquare, Tag, RefreshCw, Heart } from 'lucide-react';
 import { cn } from '../lib/utils';
+import ResponsiveImage from '../components/ResponsiveImage';
 import { useFavorites } from '../context/FavoritesContext';
 import { getMarketplaceItemById, type MarketplaceItem } from '../lib/api';
 import { useApiQuery } from '../hooks/useApiQuery';
@@ -53,10 +54,14 @@ export default function ItemDetail() {
             <div className="aspect-[4/5] rounded-2xl bg-gray-100 animate-pulse"></div>
           ) : (
             <div className="aspect-[4/5] rounded-2xl overflow-hidden bg-gray-50 border border-gray-200 relative group shadow-sm">
-              <img 
-                src={item?.image} 
-                alt={item?.title} 
+              <ResponsiveImage
+                src={item?.image}
+                alt={item?.title || 'Marketplace item'}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                sizes="(min-width: 1024px) 40vw, 90vw"
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
                 referrerPolicy="no-referrer"
               />
               <div className="absolute top-4 right-4 z-10">

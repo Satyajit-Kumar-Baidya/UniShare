@@ -1,5 +1,11 @@
 import { motion } from 'motion/react';
 import { ShieldCheck, Globe } from 'lucide-react';
+import ResponsiveImage from '../components/ResponsiveImage';
+
+const ABOUT_IMAGE = {
+  src: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&fit=crop',
+  alt: 'Students collaborating',
+};
 
 export default function About() {
   return (
@@ -17,10 +23,14 @@ export default function About() {
       </div>
 
       <div className="aspect-video w-full rounded-2xl overflow-hidden bg-gray-100 relative">
-        <img 
-          src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?q=80&w=2070&auto=format&fit=crop" 
-          alt="Students collaborating" 
+        <ResponsiveImage
+          src={ABOUT_IMAGE.src}
+          alt={ABOUT_IMAGE.alt}
           className="w-full h-full object-cover"
+          sizes="(min-width: 1024px) 960px, 100vw"
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
           referrerPolicy="no-referrer"
         />
       </div>

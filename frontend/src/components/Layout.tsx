@@ -1,8 +1,7 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { BookOpen, Search, Github, Twitter, Linkedin, ShoppingCart, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
+import { BookOpen, Search, Github, Twitter, Linkedin, ShoppingCart, MessageSquare } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import NotificationsDropdown from './NotificationsDropdown';
@@ -14,6 +13,8 @@ export default function Layout() {
   const [scrolled, setScrolled] = useState(false);
   const { user } = useAuth();
   const { unreadThreadCount } = useSocket();
+  const headerHeight = scrolled ? 64 : 72;
+  const mainPaddingTop = headerHeight + 16;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -34,15 +35,14 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-[#FAFAFA] flex flex-col font-sans">
       {/* Header */}
-      <header 
+      <header
         className={cn(
           "fixed top-0 w-full z-50 transition-all duration-300 border-b",
-          scrolled 
-            ? "bg-white border-gray-200 shadow-sm py-3" 
-            : "bg-white border-transparent py-4"
+          scrolled ? "bg-white border-gray-200 shadow-sm" : "bg-white border-transparent"
         )}
+        style={{ height: headerHeight }}
       >
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
           <div className="flex items-center gap-6">
             <Link to="/" className="flex items-center gap-2 group">
               <div className="w-9 h-9 bg-gray-900 rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform">
@@ -125,7 +125,7 @@ export default function Layout() {
       </header>
 
       {/* Main Content - Add top padding to account for fixed header */}
-      <main className="flex-1 w-full pt-24 pb-10 flex flex-col">
+      <main className="flex-1 w-full pb-10 flex flex-col" style={{ paddingTop: mainPaddingTop }}>
         <div className={cn("w-full mx-auto", location.pathname === '/' ? "max-w-full px-0" : "max-w-7xl px-4 sm:px-6")}>
           <Outlet />
         </div>
@@ -143,7 +143,7 @@ export default function Layout() {
                 <span className="font-semibold text-lg tracking-tight text-gray-900">UniShare</span>
               </Link>
               <p className="text-sm text-gray-500 leading-relaxed mb-6">
-                A peaceful, minimal student marketplace for books, stationary, and subscription sharing worldwide.
+                A UIU-only student marketplace for textbooks, course packs, and subscription sharing on campus.
               </p>
               <div className="flex items-center gap-4">
                 <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-gray-900 transition-colors"><Twitter className="w-5 h-5" /></a>

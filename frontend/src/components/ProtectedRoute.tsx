@@ -1,8 +1,13 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, type UserRole } from '../context/AuthContext';
 
-export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
+type ProtectedRouteProps = {
+  children: React.ReactNode;
+  requiredRole?: UserRole;
+};
+
+export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
   const { user } = useAuth();
   const location = useLocation();
 
@@ -11,6 +16,10 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     // trying to go to when they were redirected. This allows us to send them
     // along to that page after they login, which is a nicer user experience.
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (requiredRole && user.role !== requiredRole) {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

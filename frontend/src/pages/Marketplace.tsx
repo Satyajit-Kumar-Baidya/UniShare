@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Filter, Plus, Search, X, Heart } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { cn } from '../lib/utils';
+import ResponsiveImage from '../components/ResponsiveImage';
 import { useFavorites } from '../context/FavoritesContext';
 import { getMarketplaceItems, type MarketplaceItem } from '../lib/api';
 import { useApiQuery } from '../hooks/useApiQuery';
@@ -46,7 +47,7 @@ export default function Marketplace() {
   const [selectedType, setSelectedType] = useState('All');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100]);
 
-  const categories = ['All', 'Books', 'Stationary', 'Electronics', 'Dorm Essentials'];
+  const categories = ['All', 'Textbooks', 'Course Notes', 'Lab Gear', 'Calculators', 'Project Kits'];
   const conditions = ['All', 'New', 'Like New', 'Good', 'Fair'];
   const types = ['All', 'Sell', 'Share', 'Barter'];
 
@@ -94,7 +95,7 @@ export default function Marketplace() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold text-gray-900 tracking-tight">Marketplace</h1>
-          <p className="text-gray-500 mt-1">Buy, share, and barter study materials with peers.</p>
+          <p className="text-gray-500 mt-1">Swap UIU course packs, lab gear, and study tools with verified students.</p>
         </div>
         <div className="flex items-center gap-3">
           <button 
@@ -132,7 +133,7 @@ export default function Marketplace() {
           <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Search titles, descriptions..."
+            placeholder="Search UIU course codes, titles, or keywords..."
             value={searchQuery}
             onChange={handleSearchChange}
             className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-gray-900 placeholder:text-gray-500"
@@ -275,10 +276,13 @@ export default function Marketplace() {
               <Link to={`/marketplace/${item.id}`} className="group cursor-pointer flex flex-col h-full bg-white border border-gray-200 rounded-2xl p-4 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
                 <div className="aspect-[4/3] rounded-xl overflow-hidden bg-gray-50 mb-4 relative">
                   <div className="absolute inset-0 bg-gray-900/5 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
-                  <img
+                  <ResponsiveImage
                     src={item.image}
                     alt={item.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                    sizes="(min-width: 1280px) 260px, (min-width: 1024px) 25vw, (min-width: 640px) 45vw, 90vw"
+                    loading="lazy"
+                    decoding="async"
                     referrerPolicy="no-referrer"
                   />
                   <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/95 backdrop-blur-md rounded-lg text-[11px] font-bold tracking-wide text-gray-700 uppercase shadow-sm z-20">
@@ -349,3 +353,4 @@ export default function Marketplace() {
     </motion.div>
   );
 }
+

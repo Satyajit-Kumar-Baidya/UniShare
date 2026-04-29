@@ -22,7 +22,7 @@ export default function GlobalToast() {
   };
 
   return (
-    <div className="fixed right-4 top-20 z-[100] flex w-[min(92vw,380px)] flex-col gap-2">
+    <div className="fixed right-4 top-20 z-100 flex w-[min(92vw,380px)] flex-col gap-2">
       {toasts.map((toast) => {
         const Icon =
           toast.kind === 'error' ? AlertCircle : toast.kind === 'success' ? CheckCircle2 : Info;

@@ -9,6 +9,7 @@ import { useFavorites } from '../context/FavoritesContext';
 import { getSellerProfileById, type SellerProfileData } from '../lib/api';
 import { useApiQuery } from '../hooks/useApiQuery';
 import QueryErrorState from '../components/QueryErrorState';
+import ResponsiveImage from '../components/ResponsiveImage';
 
 export default function SellerProfile() {
   const { id } = useParams();
@@ -156,10 +157,13 @@ export default function SellerProfile() {
                 {sellerItems.map((sellerItem) => (
                   <Link key={sellerItem.id} to={`/marketplace/${sellerItem.id}`} className="group flex flex-col bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-lg transition-all duration-300">
                     <div className="aspect-[4/3] bg-gray-50 relative overflow-hidden">
-                      <img 
-                        src={sellerItem.image} 
-                        alt={sellerItem.title} 
+                      <ResponsiveImage
+                        src={sellerItem.image}
+                        alt={sellerItem.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        sizes="(min-width: 1024px) 260px, (min-width: 640px) 45vw, 90vw"
+                        loading="lazy"
+                        decoding="async"
                         referrerPolicy="no-referrer"
                       />
                       <div className="absolute top-3 left-3 px-2.5 py-1 bg-white/90 backdrop-blur-sm rounded-lg text-[11px] font-bold uppercase text-gray-700 shadow-sm">

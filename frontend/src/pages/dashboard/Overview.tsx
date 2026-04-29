@@ -1,7 +1,7 @@
 import React from "react";
 import { motion } from "motion/react";
 import { Link, useNavigate } from "react-router-dom";
-import { Bell, ChevronRight, Inbox, Package, ShoppingBag, Star, Users, ShieldAlert, CheckCircle2 } from "lucide-react";
+import { Bell, ChevronRight, Inbox, Package, ShoppingBag, Star, Users, ShieldAlert, CheckCircle2, Clock } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { useSocket } from "../../context/SocketContext";
 import { useFavorites } from "../../context/FavoritesContext";
@@ -23,6 +23,67 @@ export default function Overview() {
     queryKey: ["subscription-groups"],
     queryFn: getSubscriptionGroups,
   });
+
+  const verificationStatus = user?.verificationStatus ?? (user?.isVerified ? "verified" : "unverified");
+  const verificationConfig = {
+    verified: {
+      title: "UIU verification approved",
+      message: "Your account is verified for UIU marketplace access.",
+      action: "View status",
+      icon: CheckCircle2,
+    },
+    pending: {
+      title: "Verification pending",
+      message: "Your submission is in review. We will notify you once approved.",
+      action: "View submission",
+      icon: Clock,
+    },
+    rejected: {
+      title: "Verification needs attention",
+      message: "Your verification was rejected. Review the admin note and resubmit if needed.",
+      action: "Review details",
+      icon: ShieldAlert,
+    },
+    unverified: {
+      title: "Verification required",
+      message: "Submit your UIU email and ID to unlock the full marketplace.",
+      action: "View requirements",
+      icon: ShieldAlert,
+    },
+  } as const;
+  const banner = verificationConfig[verificationStatus];
+  const bannerStyles: Record<string, { container: string; icon: string; title: string; text: string; action: string }> = {
+    verified: {
+      container: "border-emerald-200 bg-emerald-50",
+      icon: "bg-emerald-100 text-emerald-600",
+      title: "text-emerald-900",
+      text: "text-emerald-700",
+      action: "bg-emerald-600 hover:bg-emerald-700",
+    },
+    pending: {
+      container: "border-amber-200 bg-amber-50",
+      icon: "bg-amber-100 text-amber-600",
+      title: "text-amber-900",
+      text: "text-amber-700",
+      action: "bg-amber-600 hover:bg-amber-700",
+    },
+    rejected: {
+      container: "border-rose-200 bg-rose-50",
+      icon: "bg-rose-100 text-rose-600",
+      title: "text-rose-900",
+      text: "text-rose-700",
+      action: "bg-rose-600 hover:bg-rose-700",
+    },
+    unverified: {
+      container: "border-orange-200 bg-orange-50",
+      icon: "bg-orange-100 text-orange-600",
+      title: "text-orange-900",
+      text: "text-orange-700",
+      action: "bg-orange-600 hover:bg-orange-700",
+    },
+  };
+  const styles = bannerStyles[verificationStatus];
+  const BannerIcon = banner.icon;
 
   const myListings = marketplaceItems.filter((item) => item.seller === user?.name);
   const myGroups = subscriptionGroups.filter((group) => group.owner === user?.name);
@@ -49,26 +110,27 @@ export default function Overview() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }} className="space-y-8">
-      {/* Verify Education Email Banner */}
-      {!user?.isVerified && (
-        <div className="rounded-2xl border border-orange-200 bg-orange-50 p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm relative overflow-hidden">
-          <div className="flex items-start sm:items-center gap-4">
-            <div className="bg-orange-100 p-2 sm:p-3 rounded-xl">
-              <ShieldAlert className="w-6 h-6 text-orange-600" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-orange-900 text-base sm:text-lg">Verify your Student Status</h3>
-              <p className="text-sm text-orange-700 mt-1">
-                Unlock exclusive marketplace features and co-subscription groups by linking your academic email (.edu).
-              </p>
-            </div>
+      <div className={`rounded-2xl border ${styles.container} p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm relative overflow-hidden`}>
+        <div className="flex items-start sm:items-center gap-4">
+          <div className={`p-2 sm:p-3 rounded-xl ${styles.icon}`}>
+            <BannerIcon className="w-6 h-6" />
           </div>
-          <button className="flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-orange-700 transition shadow-sm whitespace-nowrap self-start sm:self-auto">
-            <CheckCircle2 className="w-4 h-4" />
-            Verify Now
-          </button>
+          <div>
+            <h3 className={`font-semibold text-base sm:text-lg ${styles.title}`}>{banner.title}</h3>
+            <p className={`text-sm mt-1 ${styles.text}`}>{banner.message}</p>
+            {verificationStatus === "rejected" && user?.verificationNote ? (
+              <p className={`text-xs mt-2 ${styles.text}`}>Admin note: {user.verificationNote}</p>
+            ) : null}
+          </div>
         </div>
-      )}
+        <Link
+          to="/dashboard/settings"
+          className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-medium text-white transition shadow-sm whitespace-nowrap self-start sm:self-auto ${styles.action}`}
+        >
+          <CheckCircle2 className="w-4 h-4" />
+          {banner.action}
+        </Link>
+      </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-indigo-50/50 to-transparent pointer-events-none" />
