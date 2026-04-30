@@ -4,7 +4,7 @@ import { apiClient } from './apiClient';
 /**
  * FEATURE FLAG: set USE_MOCK to false when connecting to the backend.
  */
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 export type MarketplaceItem = (typeof MARKETPLACE_ITEMS)[number];
 export type SubscriptionGroup = (typeof SUBSCRIPTION_GROUPS)[number];
@@ -51,6 +51,26 @@ export type VerificationSubmissionInput = {
 const wait = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms));
 const normalizeEmail = (value: string) => value.trim().toLowerCase();
 
+// ── Auth functions (always hit the real backend) ──────────────────────────────
+
+export type LoginInput = { email: string; password: string };
+export type RegisterInput = {
+  name: string;
+  email: string;
+  password: string;
+  uiuEmail?: string;
+  uiuIdNumber?: string;
+  uiuIdImage?: string;
+};
+
+export async function loginUser(input: LoginInput): Promise<{ user: MockUser; token: string }> {
+  return apiClient<{ user: MockUser; token: string }>('/auth/login', { data: input });
+}
+
+export async function registerUser(input: RegisterInput): Promise<{ user: MockUser; token: string }> {
+  return apiClient<{ user: MockUser; token: string }>('/auth/register', { data: input });
+}
+
 export async function getMarketplaceItems(): Promise<MarketplaceItem[]> {
   if (!USE_MOCK) {
     return apiClient<MarketplaceItem[]>('/marketplace/');
@@ -79,6 +99,10 @@ export async function getMarketplaceItemsBySellerId(sellerId: string): Promise<M
 }
 
 export async function getSellerProfileById(sellerId: string): Promise<SellerProfileData | undefined> {
+  if (!USE_MOCK) {
+    return apiClient<SellerProfileData>(`/seller/${sellerId}`);
+  }
+
   await wait();
   const items = MARKETPLACE_ITEMS.filter((item) => item.sellerId === sellerId);
   const primary = items[0];
@@ -98,16 +122,28 @@ export async function getSellerProfileById(sellerId: string): Promise<SellerProf
 }
 
 export async function getSubscriptionGroups(): Promise<SubscriptionGroup[]> {
+  if (!USE_MOCK) {
+    return apiClient<SubscriptionGroup[]>('/co-subs/');
+  }
+
   await wait();
   return SUBSCRIPTION_GROUPS;
 }
 
 export async function getSubscriptionGroupById(id: string): Promise<SubscriptionGroup | undefined> {
+  if (!USE_MOCK) {
+    return apiClient<SubscriptionGroup>(`/co-subs/${id}/`);
+  }
+
   await wait();
   return SUBSCRIPTION_GROUPS.find((group) => group.id === id);
 }
 
 export async function getCartPreviewItems(): Promise<MarketplaceItem[]> {
+  if (!USE_MOCK) {
+    return apiClient<MarketplaceItem[]>('/cart/');
+  }
+
   await wait();
   return [MARKETPLACE_ITEMS[0], MARKETPLACE_ITEMS[1]];
 }
@@ -115,6 +151,10 @@ export async function getCartPreviewItems(): Promise<MarketplaceItem[]> {
 export async function createMarketplaceListing(
   input: CreateMarketplaceListingInput
 ): Promise<MarketplaceItem> {
+  if (!USE_MOCK) {
+    return apiClient<MarketplaceItem>('/marketplace/', { data: input });
+  }
+
   await wait(300);
 
   const item: MarketplaceItem = {
@@ -142,6 +182,10 @@ export async function createMarketplaceListing(
 export async function createSubscriptionGroup(
   input: CreateSubscriptionGroupInput
 ): Promise<SubscriptionGroup> {
+  if (!USE_MOCK) {
+    return apiClient<SubscriptionGroup>('/co-subs/', { data: input });
+  }
+
   await wait(300);
 
   const group: SubscriptionGroup = {

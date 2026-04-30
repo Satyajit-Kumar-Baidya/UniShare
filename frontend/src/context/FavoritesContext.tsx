@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import apiClient from '../lib/apiClient';
 
 interface FavoritesContextType {
   favorites: Set<string>;
@@ -9,33 +10,37 @@ interface FavoritesContextType {
 const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
 
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
-  const [favorites, setFavorites] = useState<Set<string>>(() => {
-    const saved = localStorage.getItem('unishare_favorites') ?? localStorage.getItem('skillex_favorites');
-    if (saved) {
-      try {
-        return new Set(JSON.parse(saved));
-      } catch (e) {
-        return new Set();
-      }
-    }
-    return new Set();
-  });
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
+  // Load favorites from backend on mount (if logged in)
   useEffect(() => {
-    localStorage.setItem('unishare_favorites', JSON.stringify(Array.from(favorites)));
-  }, [favorites]);
+    const token = localStorage.getItem('unishare_access_token');
+    if (!token) return;
+    apiClient('/favorites/')
+      .then((items: { id: string }[]) => {
+        setFavorites(new Set(items.map(i => i.id)));
+      })
+      .catch(() => {/* not logged in or network error — stay empty */});
+  }, []);
 
-  const toggleFavorite = (id: string) => {
+  const toggleFavorite = useCallback((id: string) => {
+    const token = localStorage.getItem('unishare_access_token');
     setFavorites(prev => {
-      const newFavorites = new Set(prev);
-      if (newFavorites.has(id)) {
-        newFavorites.delete(id);
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+        if (token) {
+          apiClient(`/favorites/${id}`, { method: 'DELETE' }).catch(() => {});
+        }
       } else {
-        newFavorites.add(id);
+        next.add(id);
+        if (token) {
+          apiClient('/favorites/', { method: 'POST', data: { itemId: id } }).catch(() => {});
+        }
       }
-      return newFavorites;
+      return next;
     });
-  };
+  }, []);
 
   const isFavorite = (id: string) => favorites.has(id);
 

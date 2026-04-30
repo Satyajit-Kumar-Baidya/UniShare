@@ -50,7 +50,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const newSocket = io();
+    const token = localStorage.getItem('unishare_access_token');
+    const newSocket = io({ auth: { token } });
     setSocket(newSocket);
 
     newSocket.on('init', (data: { messages: Message[], notifications: Notification[] }) => {

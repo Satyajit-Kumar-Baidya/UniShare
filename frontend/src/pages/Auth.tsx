@@ -3,7 +3,7 @@ import { motion } from 'motion/react';
 import { ShieldCheck, GraduationCap, Mail, Lock, ArrowRight, Building, User as UserIcon, CheckCircle2, Chrome, Github, IdCard, UploadCloud } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { getMockUserByEmail, submitVerificationRequest } from '../lib/api';
+import { loginUser, registerUser } from '../lib/api';
 
 type SocialProvider = 'google' | 'github';
 
@@ -150,17 +150,17 @@ export default function Auth() {
     if (!isLogin) {
       setIsLoading(true);
       try {
-        await submitVerificationRequest({
+        await registerUser({
           name: name.trim(),
           email: email.trim(),
+          password,
           uiuEmail: uiuEmail.trim(),
           uiuIdNumber: uiuIdNumber.trim(),
           uiuIdImage,
         });
-        localStorage.setItem(`mock_name_${email.trim()}`, name.trim());
         setIsSuccess(true);
-      } catch (err) {
-        setError('Unable to submit verification. Please try again.');
+      } catch (err: any) {
+        setError(err.message ?? 'Unable to create account. Please try again.');
       } finally {
         setIsLoading(false);
       }
@@ -169,40 +169,15 @@ export default function Auth() {
 
     setIsLoading(true);
     try {
-      const normalizedEmail = email.trim();
-      const savedName = localStorage.getItem(`mock_name_${normalizedEmail}`);
-      const existingUser = await getMockUserByEmail(normalizedEmail);
-      let calculatedName = savedName || name.trim();
-
-      if (!calculatedName && normalizedEmail) {
-        const [localPart] = normalizedEmail.split('@');
-        if (localPart) {
-          calculatedName = localPart
-            .replace(/[._\-0-9]+/g, ' ')
-            .trim()
-            .split(' ')
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-            .join(' ');
-        }
-      }
-
-      if (existingUser) {
-        login({
-          ...existingUser,
-          name: existingUser.name || calculatedName || 'Member',
-        });
-      } else {
-        login({
-          id: Math.random().toString(36).substring(7),
-          name: calculatedName || 'Member',
-          email: normalizedEmail,
-          joinedDate: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
-        });
-      }
-
+      const { user: userData, token } = await loginUser({
+        email: email.trim(),
+        password,
+      });
+      localStorage.setItem('unishare_access_token', token);
+      login(userData);
       navigate(from, { replace: true });
-    } catch (err) {
-      setError('Unable to sign in. Please try again.');
+    } catch (err: any) {
+      setError(err.message ?? 'Invalid email or password.');
     } finally {
       setIsLoading(false);
     }
