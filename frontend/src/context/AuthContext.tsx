@@ -1,7 +1,17 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 
-export type VerificationStatus = 'unverified' | 'pending' | 'verified' | 'rejected';
-export type UserRole = 'user' | 'admin';
+export type VerificationStatus =
+  | "unverified"
+  | "pending"
+  | "verified"
+  | "rejected";
+export type UserRole = "user" | "admin";
 
 export interface User {
   id: string;
@@ -37,12 +47,13 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const normalizeUser = (user: User): User => {
-  const status = user.verificationStatus ?? (user.isVerified ? 'verified' : 'unverified');
+  const status =
+    user.verificationStatus ?? (user.isVerified ? "verified" : "unverified");
   return {
     ...user,
-    role: user.role ?? 'user',
+    role: user.role ?? "user",
     verificationStatus: status,
-    isVerified: status === 'verified',
+    isVerified: status === "verified",
   };
 };
 
@@ -52,12 +63,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Restore session from token on first mount
   useEffect(() => {
-    const token = localStorage.getItem('unishare_access_token');
+    const token = localStorage.getItem("unishare_access_token");
     if (!token) {
       setLoading(false);
       return;
     }
-    fetch('/api/auth/me', {
+    fetch("/api/auth/me", {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => (r.ok ? r.json() : null))
@@ -71,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = (userData: User) => setUser(normalizeUser(userData));
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('unishare_access_token');
+    localStorage.removeItem("unishare_access_token");
   };
   const updateUser = (updates: Partial<User>) => {
     setUser((prev) => (prev ? normalizeUser({ ...prev, ...updates }) : null));
@@ -87,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

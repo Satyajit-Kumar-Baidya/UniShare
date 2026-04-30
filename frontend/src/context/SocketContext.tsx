@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
-import { useAuth } from './AuthContext';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { io, Socket } from "socket.io-client";
+import { useAuth } from "./AuthContext";
 
 interface Message {
   id: string;
@@ -26,7 +26,12 @@ interface SocketContextType {
   messages: Message[];
   notifications: Notification[];
   sendMessage: (receiverId: string, content: string) => void;
-  sendNotification: (recipientId: string, type: string, title: string, message: string) => void;
+  sendNotification: (
+    recipientId: string,
+    type: string,
+    title: string,
+    message: string,
+  ) => void;
   markNotificationRead: (id: string) => void;
   markThreadRead: (participantId: string) => void;
   unreadNotificationsCount: number;
@@ -50,29 +55,36 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const token = localStorage.getItem('unishare_access_token');
+    const token = localStorage.getItem("unishare_access_token");
     const newSocket = io({ auth: { token } });
     setSocket(newSocket);
 
-    newSocket.on('init', (data: { messages: Message[], notifications: Notification[] }) => {
-      setMessages(data.messages);
-      setNotifications(data.notifications);
-      setUnreadThreadIds([]);
-    });
+    newSocket.on(
+      "init",
+      (data: { messages: Message[]; notifications: Notification[] }) => {
+        setMessages(data.messages);
+        setNotifications(data.notifications);
+        setUnreadThreadIds([]);
+      },
+    );
 
-    newSocket.on('receive_message', (msg: Message) => {
+    newSocket.on("receive_message", (msg: Message) => {
       setMessages((prev) => [...prev, msg]);
       if (msg.receiverId === user.id) {
-        setUnreadThreadIds((prev) => (prev.includes(msg.senderId) ? prev : [...prev, msg.senderId]));
+        setUnreadThreadIds((prev) =>
+          prev.includes(msg.senderId) ? prev : [...prev, msg.senderId],
+        );
       }
     });
 
-    newSocket.on('receive_notification', (notif: Notification) => {
+    newSocket.on("receive_notification", (notif: Notification) => {
       setNotifications((prev) => [...prev, notif]);
     });
 
-    newSocket.on('notification_updated', (updatedNotif: Notification) => {
-      setNotifications((prev) => prev.map(n => n.id === updatedNotif.id ? updatedNotif : n));
+    newSocket.on("notification_updated", (updatedNotif: Notification) => {
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === updatedNotif.id ? updatedNotif : n)),
+      );
     });
 
     return () => {
@@ -82,7 +94,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
   const sendMessage = (receiverId: string, content: string) => {
     if (socket && user) {
-      socket.emit('send_message', {
+      socket.emit("send_message", {
         senderId: user.id,
         senderName: user.name,
         receiverId,
@@ -91,9 +103,14 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const sendNotification = (recipientId: string, type: string, title: string, message: string) => {
+  const sendNotification = (
+    recipientId: string,
+    type: string,
+    title: string,
+    message: string,
+  ) => {
     if (socket) {
-      socket.emit('send_notification', {
+      socket.emit("send_notification", {
         recipientId,
         type,
         title,
@@ -104,7 +121,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 
   const markNotificationRead = (id: string) => {
     if (socket) {
-      socket.emit('mark_notification_read', id);
+      socket.emit("mark_notification_read", id);
     }
   };
 
@@ -113,22 +130,28 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Filter notifications for current user
-  const userNotifications = notifications.filter(n => n.recipientId === user?.id);
-  const unreadNotificationsCount = userNotifications.filter(n => !n.read).length;
+  const userNotifications = notifications.filter(
+    (n) => n.recipientId === user?.id,
+  );
+  const unreadNotificationsCount = userNotifications.filter(
+    (n) => !n.read,
+  ).length;
   const unreadThreadCount = unreadThreadIds.length;
 
   return (
-    <SocketContext.Provider value={{ 
-      socket, 
-      messages, 
-      notifications: userNotifications, 
-      sendMessage, 
-      sendNotification, 
-      markNotificationRead,
-      markThreadRead,
-      unreadNotificationsCount,
-      unreadThreadCount,
-    }}>
+    <SocketContext.Provider
+      value={{
+        socket,
+        messages,
+        notifications: userNotifications,
+        sendMessage,
+        sendNotification,
+        markNotificationRead,
+        markThreadRead,
+        unreadNotificationsCount,
+        unreadThreadCount,
+      }}
+    >
       {children}
     </SocketContext.Provider>
   );
@@ -137,7 +160,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
 export function useSocket() {
   const context = useContext(SocketContext);
   if (context === undefined) {
-    throw new Error('useSocket must be used within a SocketProvider');
+    throw new Error("useSocket must be used within a SocketProvider");
   }
   return context;
 }
