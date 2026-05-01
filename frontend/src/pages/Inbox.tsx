@@ -1,6 +1,6 @@
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'motion/react';
-import { MessageSquare, Send } from 'lucide-react';
+import { MessageSquare, Search, Send, Smile, Trash2, PencilLine, Reply } from 'lucide-react';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -13,9 +13,26 @@ type ConversationPreview = {
 
 export default function Inbox() {
   const { user } = useAuth();
-  const { messages, sendMessage, markThreadRead } = useSocket();
+  const {
+    messages,
+    sendMessage,
+    editMessage,
+    deleteMessage,
+    reactToMessage,
+    sendTyping,
+    typingByUserId,
+    onlineUsers,
+    markThreadRead,
+  } = useSocket();
   const [activeParticipantId, setActiveParticipantId] = useState<string | null>(null);
   const [messageDraft, setMessageDraft] = useState('');
+  const [conversationSearch, setConversationSearch] = useState('');
+  const [messageSearch, setMessageSearch] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const [replyToMessageId, setReplyToMessageId] = useState<string | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [reactionTargetId, setReactionTargetId] = useState<string | null>(null);
+  const [reactionInput, setReactionInput] = useState('');
 
   const conversations = useMemo<ConversationPreview[]>(() => {
     if (!user) {
@@ -43,14 +60,23 @@ export default function Inbox() {
       }
     });
 
-    return Array.from(map.values()).sort(
+    const sorted = Array.from(map.values()).sort(
       (a, b) => new Date(b.lastTimestamp).getTime() - new Date(a.lastTimestamp).getTime()
     );
-  }, [messages, user]);
+    if (!conversationSearch.trim()) {
+      return sorted;
+    }
+    const query = conversationSearch.trim().toLowerCase();
+    return sorted.filter(
+      (conversation) =>
+        conversation.participantName.toLowerCase().includes(query) ||
+        conversation.lastMessage.toLowerCase().includes(query)
+    );
+  }, [messages, user, conversationSearch]);
 
   const selectedConversationId = activeParticipantId || conversations[0]?.participantId || null;
 
-  const threadMessages = useMemo(() => {
+  const allThreadMessages = useMemo(() => {
     if (!user || !selectedConversationId) {
       return [];
     }
@@ -64,11 +90,30 @@ export default function Inbox() {
       .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
   }, [messages, selectedConversationId, user]);
 
+  const threadMessages = useMemo(() => {
+    if (!messageSearch.trim()) {
+      return allThreadMessages;
+    }
+    const query = messageSearch.trim().toLowerCase();
+    return allThreadMessages.filter((message) => message.content.toLowerCase().includes(query));
+  }, [allThreadMessages, messageSearch]);
+
   useEffect(() => {
     if (selectedConversationId) {
       markThreadRead(selectedConversationId);
     }
-  }, [markThreadRead, selectedConversationId]);
+    return () => {
+      if (selectedConversationId) {
+        sendTyping(selectedConversationId, false);
+      }
+    };
+  }, [markThreadRead, selectedConversationId, sendTyping]);
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [allThreadMessages.length, selectedConversationId]);
 
   const handleSendMessage = (event: FormEvent) => {
     event.preventDefault();
@@ -76,13 +121,88 @@ export default function Inbox() {
       return;
     }
 
-    sendMessage(selectedConversationId, messageDraft.trim());
+    if (editingMessageId) {
+      editMessage(editingMessageId, messageDraft.trim());
+      setEditingMessageId(null);
+    } else {
+      sendMessage(selectedConversationId, messageDraft.trim(), replyToMessageId);
+    }
+
     setMessageDraft('');
+    setReplyToMessageId(null);
+    sendTyping(selectedConversationId, false);
+  };
+
+  const isTyping = selectedConversationId
+    ? Boolean(typingByUserId[selectedConversationId])
+    : false;
+
+  const isParticipantOnline = selectedConversationId
+    ? onlineUsers.includes(selectedConversationId)
+    : false;
+
+  const replyToMessage = replyToMessageId
+    ? allThreadMessages.find((message) => message.id === replyToMessageId)
+    : null;
+
+  const extractUrl = (content: string) => {
+    const match = content.match(/https?:\/\/[^\s]+/i);
+    return match?.[0];
+  };
+
+  const isImageUrl = (url: string) => /\.(png|jpe?g|gif|webp)$/i.test(url);
+  const isVideoUrl = (url: string) => /\.(mp4|webm|ogg)$/i.test(url);
+
+  const renderMessageBody = (content: string) => {
+    const url = extractUrl(content);
+    if (!url) {
+      return <p className="leading-relaxed whitespace-pre-wrap">{content}</p>;
+    }
+
+    const isOnlyUrl = content.trim() === url.trim();
+    return (
+      <div className="space-y-2">
+        {!isOnlyUrl && <p className="leading-relaxed whitespace-pre-wrap">{content}</p>}
+        {isImageUrl(url) && (
+          <img
+            src={url}
+            alt="Shared media"
+            className="max-h-60 rounded-xl border border-slate-200"
+            loading="lazy"
+            referrerPolicy="no-referrer"
+          />
+        )}
+        {isVideoUrl(url) && (
+          <video controls className="max-h-60 rounded-xl border border-slate-200">
+            <source src={url} />
+          </video>
+        )}
+        {!isImageUrl(url) && !isVideoUrl(url) && (
+          <a
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            className="text-xs text-indigo-200 underline"
+          >
+            {url}
+          </a>
+        )}
+      </div>
+    );
+  };
+
+  const getReactionSummary = (message: any) => {
+    const reactions = message.reactions ?? [];
+    const map = new Map<string, number>();
+    reactions.forEach((reaction: any) => {
+      map.set(reaction.emoji, (map.get(reaction.emoji) ?? 0) + 1);
+    });
+    return Array.from(map.entries()).map(([emoji, count]) => ({ emoji, count }));
   };
 
   return (
     <section className="relative isolate overflow-hidden py-10 sm:py-14 min-h-screen bg-slate-50/30">
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,_#fae8ff_0,_transparent_40%),radial-gradient(circle_at_bottom_right,_#e0f2fe_0,_transparent_45%)]" />
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,#fae8ff_0,transparent_40%),radial-gradient(circle_at_bottom_right,#e0f2fe_0,transparent_45%)]" />
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28 }}>
@@ -92,10 +212,22 @@ export default function Inbox() {
 
         <div className="mt-6 grid gap-6 lg:grid-cols-[340px_1fr] items-start">
           {/* Sidebar */}
-          <aside className="flex flex-col h-[600px] rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <aside className="flex flex-col h-150 rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div className="border-b border-slate-100 p-5 bg-white flex justify-between items-center z-10 sticky top-0">
               <h2 className="text-base font-semibold text-slate-900">Messages</h2>
               <span className="text-xs font-medium bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full">{conversations.length}</span>
+            </div>
+
+            <div className="px-5 py-3 border-b border-slate-100 bg-white">
+              <div className="relative">
+                <Search className="h-4 w-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  value={conversationSearch}
+                  onChange={(event) => setConversationSearch(event.target.value)}
+                  placeholder="Search conversations"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-xs text-slate-700 outline-none focus:border-indigo-300 focus:bg-white"
+                />
+              </div>
             </div>
             
             <div className="flex-1 overflow-y-auto">
@@ -105,7 +237,7 @@ export default function Inbox() {
                     <MessageSquare className="h-7 w-7 text-slate-400" />
                   </div>
                   <p className="text-sm font-medium text-slate-900">No messages yet</p>
-                  <p className="mt-2 text-xs text-slate-500 leading-relaxed max-w-[200px]">
+                  <p className="mt-2 text-xs text-slate-500 leading-relaxed max-w-50">
                     Connect with users from the marketplace or groups to start chatting.
                   </p>
                 </div>
@@ -124,7 +256,7 @@ export default function Inbox() {
                           {isActive && (
                             <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600 rounded-r-full" />
                           )}
-                          <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0 text-indigo-700 font-bold text-lg shadow-sm border border-indigo-200/50">
+                          <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center shrink-0 text-indigo-700 font-bold text-lg shadow-sm border border-indigo-200/50">
                             {conversation.participantName.charAt(0).toUpperCase()}
                           </div>
                           <div className="flex-1 min-w-0 pt-0.5">
@@ -150,7 +282,7 @@ export default function Inbox() {
           </aside>
 
           {/* Chat Window */}
-          <div className="flex flex-col h-[600px] rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden relative">
+          <div className="flex flex-col h-150 rounded-3xl border border-slate-200 bg-white shadow-sm overflow-hidden relative">
             {!selectedConversationId ? (
               <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-slate-50/30">
                 <div className="w-20 h-20 bg-white shadow-sm border border-slate-100 rounded-full flex items-center justify-center mb-5">
@@ -172,9 +304,25 @@ export default function Inbox() {
                       {conversations.find(c => c.participantId === selectedConversationId)?.participantName || 'User'}
                     </h3>
                     <div className="flex items-center gap-1.5 mt-0.5">
-                      <div className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_0_2px_rgba(16,185,129,0.2)]"></div>
-                      <span className="text-[12px] font-medium text-slate-500">Active now</span>
+                      <div className={`w-2 h-2 rounded-full shadow-[0_0_0_2px_rgba(16,185,129,0.2)] ${
+                        isParticipantOnline ? 'bg-emerald-500' : 'bg-slate-300'
+                      }`} />
+                      <span className="text-[12px] font-medium text-slate-500">
+                        {isParticipantOnline ? 'Active now' : 'Offline'}
+                      </span>
+                      {isTyping && (
+                        <span className="ml-2 text-[12px] font-medium text-indigo-600">typing...</span>
+                      )}
                     </div>
+                  </div>
+                  <div className="ml-auto flex items-center gap-2">
+                    <Search className="h-4 w-4 text-slate-400" />
+                    <input
+                      value={messageSearch}
+                      onChange={(event) => setMessageSearch(event.target.value)}
+                      placeholder="Search messages"
+                      className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-700 outline-none focus:border-indigo-300 focus:bg-white"
+                    />
                   </div>
                 </div>
 
@@ -188,9 +336,22 @@ export default function Inbox() {
                   ) : (
                     threadMessages.map((message) => {
                       const isMine = message.senderId === user?.id;
+                      const isDeleted = Boolean(message.deletedAt);
+                      const showReceipt =
+                        isMine &&
+                        message.read &&
+                        message.id === allThreadMessages[allThreadMessages.length - 1]?.id;
+                      const reactionSummary = getReactionSummary(message);
                       return (
                         <div key={message.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'} group animate-in fade-in slide-in-from-bottom-2 duration-300`}>
                           <div className={`flex flex-col ${isMine ? 'items-end' : 'items-start'} max-w-[70%]`}>
+                            {message.replyToId && (
+                              <div className={`mb-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600 ${
+                                isMine ? 'self-end' : 'self-start'
+                              }`}>
+                                Replying to {message.replyToSenderName || 'User'}: {message.replyToContent || 'Message'}
+                              </div>
+                            )}
                             <div
                               className={`rounded-2xl px-5 py-3 text-[15px] shadow-sm ${
                                 isMine
@@ -198,26 +359,143 @@ export default function Inbox() {
                                   : 'rounded-tl-sm border border-slate-200 bg-white text-slate-800'
                               }`}
                             >
-                              <p className="leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                              {isDeleted ? (
+                                <p className="italic text-slate-200">Message deleted</p>
+                              ) : (
+                                renderMessageBody(message.content)
+                              )}
                             </div>
-                            <span className="mt-1.5 text-[10px] text-slate-400 font-medium px-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              {new Date(message.timestamp).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                              })}
-                            </span>
+                            {reactionSummary.length > 0 && (
+                              <div className="mt-2 flex flex-wrap gap-1">
+                                {reactionSummary.map((reaction) => (
+                                  <button
+                                    key={reaction.emoji}
+                                    onClick={() => reactToMessage(message.id, reaction.emoji)}
+                                    className="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-xs text-slate-700"
+                                  >
+                                    {reaction.emoji} {reaction.count}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                            <div className="mt-2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {!isDeleted && (
+                                <>
+                                  <button
+                                    onClick={() => setReplyToMessageId(message.id)}
+                                    className="text-[10px] text-slate-500 hover:text-indigo-600"
+                                  >
+                                    <Reply className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => setReactionTargetId(message.id)}
+                                    className="text-[10px] text-slate-500 hover:text-indigo-600"
+                                  >
+                                    <Smile className="h-3 w-3" />
+                                  </button>
+                                </>
+                              )}
+                              {isMine && !isDeleted && (
+                                <>
+                                  <button
+                                    onClick={() => {
+                                      setEditingMessageId(message.id);
+                                      setMessageDraft(message.content);
+                                    }}
+                                    className="text-[10px] text-slate-500 hover:text-indigo-600"
+                                  >
+                                    <PencilLine className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    onClick={() => deleteMessage(message.id)}
+                                    className="text-[10px] text-slate-500 hover:text-rose-600"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                            <div className="mt-1.5 flex items-center gap-2 text-[10px] text-slate-400 font-medium px-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <span>
+                                {new Date(message.timestamp).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </span>
+                              {message.editedAt && <span>Edited</span>}
+                              {isMine && message.status === 'sending' && <span>Sending...</span>}
+                              {showReceipt && <span>Seen</span>}
+                            </div>
                           </div>
                         </div>
                       );
                     })
                   )}
+                  <div ref={messagesEndRef} />
                 </div>
 
                 <form onSubmit={handleSendMessage} className="border-t border-slate-100 p-5 bg-white">
+                  {(replyToMessage || editingMessageId) && (
+                    <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-600 flex items-center justify-between">
+                      <span>
+                        {editingMessageId
+                          ? 'Editing message'
+                          : `Replying to ${replyToMessage?.senderName || 'User'}: ${replyToMessage?.content || 'Message'}`}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReplyToMessageId(null);
+                          setEditingMessageId(null);
+                        }}
+                        className="text-xs text-slate-500 hover:text-slate-700"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  )}
+                  {reactionTargetId && (
+                    <div className="mb-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600 flex items-center gap-2">
+                      <input
+                        value={reactionInput}
+                        onChange={(event) => setReactionInput(event.target.value)}
+                        placeholder="Type emoji and press Add"
+                        className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 outline-none focus:border-indigo-300"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (reactionInput.trim()) {
+                            reactToMessage(reactionTargetId, reactionInput.trim());
+                          }
+                          setReactionInput('');
+                          setReactionTargetId(null);
+                        }}
+                        className="rounded-lg bg-indigo-600 px-3 py-2 text-xs text-white"
+                      >
+                        Add
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setReactionInput('');
+                          setReactionTargetId(null);
+                        }}
+                        className="rounded-lg border border-slate-200 px-3 py-2 text-xs text-slate-600"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                   <div className="flex items-end gap-3 relative">
                     <textarea
                       value={messageDraft}
-                      onChange={(event) => setMessageDraft(event.target.value)}
+                      onChange={(event) => {
+                        setMessageDraft(event.target.value);
+                        if (selectedConversationId) {
+                          sendTyping(selectedConversationId, event.target.value.trim().length > 0);
+                        }
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' && !e.shiftKey) {
                           e.preventDefault();
@@ -225,13 +503,13 @@ export default function Inbox() {
                         }
                       }}
                       placeholder="Type your message..."
-                      className="flex-1 resize-none overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3.5 text-sm text-slate-800 outline-none transition-all min-h-[52px] max-h-[120px] focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50/50"
+                      className="flex-1 resize-none overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 px-5 py-3.5 text-sm text-slate-800 outline-none transition-all min-h-13 max-h-30 focus:border-indigo-300 focus:bg-white focus:ring-4 focus:ring-indigo-50/50"
                       rows={1}
                     />
                     <button
                       type="submit"
                       disabled={!messageDraft.trim()}
-                      className="inline-flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-white transition-all hover:bg-indigo-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-none"
+                      className="inline-flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl bg-indigo-600 text-white transition-all hover:bg-indigo-700 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:shadow-none"
                     >
                       <Send className="h-5 w-5 ml-1" />
                     </button>

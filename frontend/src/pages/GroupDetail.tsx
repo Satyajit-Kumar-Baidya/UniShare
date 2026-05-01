@@ -1,8 +1,9 @@
-import { useParams, Link } from 'react-router-dom';
+import React from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Users, ArrowLeft, ShieldCheck, Info, Music, Tv, BookOpen, FileText, PenTool, Calendar, Share2, Key } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { getSubscriptionGroupById, type SubscriptionGroup } from '../lib/api';
+import { getSubscriptionGroupById, joinSubscriptionGroup, type SubscriptionGroup } from '../lib/api';
 import { useApiQuery } from '../hooks/useApiQuery';
 import QueryErrorState from '../components/QueryErrorState';
 
@@ -10,6 +11,9 @@ const iconMap: Record<string, any> = { Music, Tv, BookOpen, FileText, PenTool };
 
 export default function GroupDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const [isJoining, setIsJoining] = React.useState(false);
+  const [joinError, setJoinError] = React.useState<string | null>(null);
   const { data: group, isLoading: loading, isError, refetch } = useApiQuery<SubscriptionGroup | undefined>({
     queryKey: ['subscription-group', id],
     queryFn: () => (id ? getSubscriptionGroupById(id) : Promise.resolve(undefined)),
@@ -43,6 +47,22 @@ export default function GroupDetail() {
   const spotsLeft = group.totalSpots - group.filledSpots;
   const isFull = spotsLeft === 0;
   const isSublet = group.type === 'sublet';
+
+  const handleJoin = async () => {
+    if (!id || isJoining) {
+      return;
+    }
+    setIsJoining(true);
+    setJoinError(null);
+    try {
+      await joinSubscriptionGroup(id);
+      navigate('/checkout');
+    } catch (err: any) {
+      setJoinError(err?.message ?? 'Could not join this group.');
+    } finally {
+      setIsJoining(false);
+    }
+  };
 
   return (
     <motion.div
@@ -169,6 +189,12 @@ export default function GroupDetail() {
           </div>
         </div>
 
+        {joinError && (
+          <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {joinError}
+          </div>
+        )}
+
         {isFull ? (
           <button 
             disabled
@@ -177,17 +203,22 @@ export default function GroupDetail() {
             {isSublet ? 'Currently Unavailable' : 'Group is Full'}
           </button>
         ) : (
-          <Link 
-            to="/checkout"
+          <button
+            onClick={handleJoin}
+            disabled={isJoining}
             className={cn(
-              "w-full py-4 text-white font-medium rounded-xl transition-colors shadow-sm flex items-center justify-center",
+              "w-full py-4 text-white font-medium rounded-xl transition-colors shadow-sm flex items-center justify-center disabled:opacity-70 disabled:cursor-not-allowed",
               isSublet 
                 ? "bg-amber-600 hover:bg-amber-700" 
                 : "bg-indigo-600 hover:bg-indigo-700"
             )}
           >
-            {isSublet ? 'Request Sublet & Authorize Payment' : 'Join Group & Authorize Payment'}
-          </Link>
+            {isJoining
+              ? 'Joining...'
+              : isSublet
+                ? 'Request Sublet & Authorize Payment'
+                : 'Join Group & Authorize Payment'}
+          </button>
         )}
       </div>
     </motion.div>

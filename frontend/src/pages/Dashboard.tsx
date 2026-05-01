@@ -105,7 +105,7 @@ export default function Dashboard() {
           transition={{ duration: 0.3 }}
           className="rounded-2xl border border-gray-200 bg-white p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-sm relative overflow-hidden"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-indigo-50/50 to-transparent pointer-events-none" />
+          <div className="absolute inset-0 bg-linear-to-r from-indigo-50/50 to-transparent pointer-events-none" />
           <div className="relative z-10 flex items-center gap-5">
             <div className="hidden sm:flex h-20 w-20 rounded-full overflow-hidden border-[3px] border-white shadow-sm shrink-0 bg-gray-100 items-center justify-center">
               {user?.avatar ? (
@@ -191,8 +191,8 @@ export default function Dashboard() {
               <ul className="space-y-3">
                 {Array.from({ length: 3 }).map((_, idx) => (
                   <li key={`notif-skeleton-${idx}`} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                    <div className="h-3 w-2/5 rounded bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 bg-[length:200%_100%] animate-[pulse_1.4s_ease-in-out_infinite]" />
-                    <div className="mt-2 h-3 w-4/5 rounded bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 bg-[length:200%_100%] animate-[pulse_1.4s_ease-in-out_infinite]" />
+                    <div className="h-3 w-2/5 rounded bg-linear-to-r from-slate-200 via-slate-100 to-slate-200 bg-size-[200%_100%] animate-[pulse_1.4s_ease-in-out_infinite]" />
+                    <div className="mt-2 h-3 w-4/5 rounded bg-linear-to-r from-slate-200 via-slate-100 to-slate-200 bg-size-[200%_100%] animate-[pulse_1.4s_ease-in-out_infinite]" />
                   </li>
                 ))}
               </ul>
@@ -264,8 +264,8 @@ export default function Dashboard() {
                 <ul className="space-y-2">
                   {Array.from({ length: 3 }).map((_, idx) => (
                     <li key={`message-skeleton-${idx}`} className="rounded-xl bg-slate-50 px-3 py-2.5">
-                      <div className="h-3 w-1/4 rounded bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 bg-[length:200%_100%] animate-[pulse_1.4s_ease-in-out_infinite]" />
-                      <div className="mt-2 h-3 w-3/4 rounded bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 bg-[length:200%_100%] animate-[pulse_1.4s_ease-in-out_infinite]" />
+                      <div className="h-3 w-1/4 rounded bg-linear-to-r from-slate-200 via-slate-100 to-slate-200 bg-size-[200%_100%] animate-[pulse_1.4s_ease-in-out_infinite]" />
+                      <div className="mt-2 h-3 w-3/4 rounded bg-linear-to-r from-slate-200 via-slate-100 to-slate-200 bg-size-[200%_100%] animate-[pulse_1.4s_ease-in-out_infinite]" />
                     </li>
                   ))}
                 </ul>
@@ -306,8 +306,8 @@ export default function Dashboard() {
                 <ul className="space-y-2">
                   {Array.from({ length: 3 }).map((_, idx) => (
                     <li key={`order-skeleton-${idx}`} className="rounded-xl bg-slate-50 px-3 py-2.5">
-                      <div className="h-3 w-1/2 rounded bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 bg-[length:200%_100%] animate-[pulse_1.4s_ease-in-out_infinite]" />
-                      <div className="mt-2 h-3 w-2/3 rounded bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 bg-[length:200%_100%] animate-[pulse_1.4s_ease-in-out_infinite]" />
+                      <div className="h-3 w-1/2 rounded bg-linear-to-r from-slate-200 via-slate-100 to-slate-200 bg-size-[200%_100%] animate-[pulse_1.4s_ease-in-out_infinite]" />
+                      <div className="mt-2 h-3 w-2/3 rounded bg-linear-to-r from-slate-200 via-slate-100 to-slate-200 bg-size-[200%_100%] animate-[pulse_1.4s_ease-in-out_infinite]" />
                     </li>
                   ))}
                 </ul>

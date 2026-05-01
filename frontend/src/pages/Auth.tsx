@@ -72,8 +72,8 @@ export default function Auth() {
 
     if (!password) {
       errors.password = "Password is required.";
-    } else if (password.length < 8) {
-      errors.password = "Password must be at least 8 characters.";
+    } else if (password.length < 6) {
+      errors.password = "Password must be at least 6 characters.";
     }
 
     if (!isLogin) {
@@ -81,18 +81,25 @@ export default function Auth() {
         errors.name = "Full name is required.";
       }
 
-      if (!uiuEmail.trim()) {
-        errors.uiuEmail = "UIU email is required.";
-      } else if (!/^\S+@\S+\.\S+$/.test(uiuEmail.trim())) {
-        errors.uiuEmail = "Enter a valid UIU email.";
-      }
+      const hasAnyVerification =
+        Boolean(uiuEmail.trim()) ||
+        Boolean(uiuIdNumber.trim()) ||
+        Boolean(uiuIdImage);
 
-      if (!uiuIdNumber.trim()) {
-        errors.uiuIdNumber = "UIU ID number is required.";
-      }
+      if (hasAnyVerification) {
+        if (!uiuEmail.trim()) {
+          errors.uiuEmail = "UIU email is required if verifying.";
+        } else if (!/^\S+@\S+\.\S+$/.test(uiuEmail.trim())) {
+          errors.uiuEmail = "Enter a valid UIU email.";
+        }
 
-      if (!uiuIdImage) {
-        errors.uiuIdImage = "Upload your UIU ID card.";
+        if (!uiuIdNumber.trim()) {
+          errors.uiuIdNumber = "UIU ID number is required if verifying.";
+        }
+
+        if (!uiuIdImage) {
+          errors.uiuIdImage = "Upload your UIU ID card to verify.";
+        }
       }
 
       if (!confirmPassword) {
@@ -172,15 +179,25 @@ export default function Auth() {
     if (!isLogin) {
       setIsLoading(true);
       try {
-        await registerUser({
+        const { user: userData, token } = await registerUser({
           name: name.trim(),
           email: email.trim(),
           password,
-          uiuEmail: uiuEmail.trim(),
-          uiuIdNumber: uiuIdNumber.trim(),
-          uiuIdImage,
+          uiuEmail: uiuEmail.trim() || undefined,
+          uiuIdNumber: uiuIdNumber.trim() || undefined,
+          uiuIdImage: uiuIdImage || undefined,
         });
-        setIsSuccess(true);
+        localStorage.setItem("unishare_access_token", token);
+        login(userData);
+        const hasVerificationData =
+          Boolean(uiuEmail.trim()) &&
+          Boolean(uiuIdNumber.trim()) &&
+          Boolean(uiuIdImage);
+        if (hasVerificationData) {
+          setIsSuccess(true);
+        } else {
+          navigate(from, { replace: true });
+        }
       } catch (err: any) {
         setError(err.message ?? "Unable to create account. Please try again.");
       } finally {

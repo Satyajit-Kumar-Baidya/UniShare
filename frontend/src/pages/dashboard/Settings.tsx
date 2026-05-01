@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { BadgeCheck, Check, Clock, ShieldAlert } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
-import { getMockUserByEmail } from "../../lib/api";
+import { getMockUserByEmail, updateUserProfile } from "../../lib/api";
 
 export default function Settings() {
   const { user, updateUser } = useAuth();
@@ -15,6 +15,8 @@ export default function Settings() {
   const [editGraduationYear, setEditGraduationYear] = useState(user?.graduationYear || "");
   const [editBio, setEditBio] = useState(user?.bio || "");
   const [isSaved, setIsSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -70,18 +72,30 @@ export default function Settings() {
   const verification = statusConfig[verificationStatus];
   const VerificationIcon = verification.icon;
 
-  const handleSaveProfile = () => {
-    updateUser({ 
-      name: editName,
-      phone: editPhone,
-      address: editAddress,
-      university: editUniversity,
-      major: editMajor,
-      graduationYear: editGraduationYear,
-      bio: editBio
-    });
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
+  const handleSaveProfile = async () => {
+    if (!user) {
+      return;
+    }
+    setIsSaving(true);
+    setSaveError(null);
+    try {
+      const updated = await updateUserProfile(user.id, {
+        name: editName,
+        phone: editPhone,
+        address: editAddress,
+        university: editUniversity,
+        major: editMajor,
+        graduationYear: editGraduationYear,
+        bio: editBio,
+      });
+      updateUser(updated);
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+    } catch (err: any) {
+      setSaveError(err?.message ?? "Unable to save changes.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -181,8 +195,12 @@ export default function Settings() {
       </div>
 
       <div className="flex items-center gap-4">
-        <button onClick={handleSaveProfile} className="px-6 py-2.5 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors shadow-sm">
-          Save Changes
+        <button
+          onClick={handleSaveProfile}
+          disabled={isSaving}
+          className="px-6 py-2.5 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          {isSaving ? "Saving..." : "Save Changes"}
         </button>
         {isSaved && (
           <span className="text-sm font-medium text-emerald-600 flex items-center gap-1.5">
@@ -190,6 +208,7 @@ export default function Settings() {
             Saved successfully!
           </span>
         )}
+        {saveError && <span className="text-sm font-medium text-rose-600">{saveError}</span>}
       </div>
     </motion.div>
   );

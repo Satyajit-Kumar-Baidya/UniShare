@@ -42,6 +42,7 @@ export default function Marketplace() {
   
   // Filter states
   const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState('newest');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedCondition, setSelectedCondition] = useState('All');
   const [selectedType, setSelectedType] = useState('All');
@@ -52,7 +53,7 @@ export default function Marketplace() {
   const types = ['All', 'Sell', 'Share', 'Barter'];
 
   const filteredItems = useMemo(() => {
-    return items.filter((item) => {
+    const results = items.filter((item) => {
       // Search filter
       const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                             item.description.toLowerCase().includes(searchQuery.toLowerCase());
@@ -71,7 +72,25 @@ export default function Marketplace() {
 
       return matchesSearch && matchesCategory && matchesCondition && matchesType && matchesPrice;
     });
-  }, [items, searchQuery, selectedCategory, selectedCondition, selectedType, priceRange]);
+
+    const sorted = [...results];
+    switch (sortBy) {
+      case 'price_low':
+        sorted.sort((a, b) => a.price - b.price);
+        break;
+      case 'price_high':
+        sorted.sort((a, b) => b.price - a.price);
+        break;
+      case 'alphabetical':
+        sorted.sort((a, b) => a.title.localeCompare(b.title));
+        break;
+      default:
+        // newest: keep API order (created_at desc)
+        break;
+    }
+
+    return sorted;
+  }, [items, searchQuery, selectedCategory, selectedCondition, selectedType, priceRange, sortBy]);
 
   const resetFilters = () => {
     setSelectedCategory('All');
@@ -129,6 +148,21 @@ export default function Marketplace() {
 
       {/* Search and Filters Area */}
       <div className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm space-y-5 font-body relative z-10">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wider text-gray-500">Sort by</p>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="mt-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-indigo-300"
+            >
+              <option value="newest">Newest</option>
+              <option value="price_low">Price: Low to High</option>
+              <option value="price_high">Price: High to Low</option>
+              <option value="alphabetical">Alphabetical</option>
+            </select>
+          </div>
+        </div>
         <div className="relative">
           <Search className="w-5 h-5 absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
@@ -248,12 +282,12 @@ export default function Marketplace() {
       </div>
 
       {/* Results Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 font-body">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 font-body items-stretch">
         {loading ? (
           // Skeleton Loaders
           Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="flex flex-col h-full animate-pulse p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
-              <div className="aspect-[4/3] rounded-xl bg-gray-100 mb-4 w-full"></div>
+              <div className="aspect-4/3 rounded-xl bg-gray-100 mb-4 w-full"></div>
               <div className="space-y-3 flex-1 flex flex-col">
                 <div className="flex items-start justify-between gap-2">
                   <div className="h-5 bg-gray-100 rounded w-3/4"></div>
@@ -274,7 +308,7 @@ export default function Marketplace() {
               transition={{ duration: 0.4, delay: index * 0.05 }}
             >
               <Link to={`/marketplace/${item.id}`} className="group cursor-pointer flex flex-col h-full bg-white border border-gray-200 rounded-2xl p-4 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300">
-                <div className="aspect-[4/3] rounded-xl overflow-hidden bg-gray-50 mb-4 relative">
+                <div className="aspect-4/3 rounded-xl overflow-hidden bg-gray-50 mb-4 relative">
                   <div className="absolute inset-0 bg-gray-900/5 group-hover:bg-transparent transition-colors duration-500 z-10 pointer-events-none" />
                   <ResponsiveImage
                     src={item.image}

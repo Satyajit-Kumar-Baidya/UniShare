@@ -99,8 +99,20 @@ CREATE TABLE IF NOT EXISTS messages (
   sender_id   TEXT NOT NULL REFERENCES users(id),
   receiver_id TEXT NOT NULL REFERENCES users(id),
   content     TEXT NOT NULL,
+  reply_to    TEXT REFERENCES messages(id),
   read        INTEGER NOT NULL DEFAULT 0,
+  edited_at   TEXT,
+  deleted_at  TEXT,
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS message_reactions (
+  id          TEXT PRIMARY KEY,
+  message_id  TEXT NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+  user_id     TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  emoji       TEXT NOT NULL,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(message_id, user_id, emoji)
 );
 
 CREATE TABLE IF NOT EXISTS notifications (

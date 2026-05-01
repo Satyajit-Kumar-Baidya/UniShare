@@ -1,3 +1,4 @@
+import React, { useMemo, useState } from 'react';
 import { motion } from 'motion/react';
 import { Plus, Users, Music, Tv, BookOpen, FileText, PenTool, Key } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -11,11 +12,43 @@ const iconMap: Record<string, any> = {
 };
 
 export default function CoSubs() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
   const { data: groups = [], isLoading: loading, isError, refetch } = useApiQuery<SubscriptionGroup[]>({
     queryKey: ['subscription-groups'],
     queryFn: getSubscriptionGroups,
     errorMessage: 'Could not load subscription groups.',
   });
+
+  const filteredGroups = useMemo(() => {
+    const results = groups.filter((group) => {
+      if (!searchQuery.trim()) {
+        return true;
+      }
+      const query = searchQuery.trim().toLowerCase();
+      return (
+        group.service.toLowerCase().includes(query) ||
+        group.owner.toLowerCase().includes(query)
+      );
+    });
+
+    const sorted = [...results];
+    switch (sortBy) {
+      case 'price_low':
+        sorted.sort((a, b) => a.pricePerMonth - b.pricePerMonth);
+        break;
+      case 'price_high':
+        sorted.sort((a, b) => b.pricePerMonth - a.pricePerMonth);
+        break;
+      case 'spots_left':
+        sorted.sort((a, b) => (b.totalSpots - b.filledSpots) - (a.totalSpots - a.filledSpots));
+        break;
+      default:
+        break;
+    }
+
+    return sorted;
+  }, [groups, searchQuery, sortBy]);
 
   return (
     <motion.div
@@ -35,6 +68,31 @@ export default function CoSubs() {
         </Link>
       </div>
 
+      <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+        <div className="flex-1">
+          <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Search</label>
+          <input
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search services or owners"
+            className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 outline-none focus:border-indigo-300"
+          />
+        </div>
+        <div>
+          <label className="text-xs font-semibold uppercase tracking-wider text-gray-500">Sort by</label>
+          <select
+            value={sortBy}
+            onChange={(event) => setSortBy(event.target.value)}
+            className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 outline-none focus:border-indigo-300"
+          >
+            <option value="newest">Newest</option>
+            <option value="price_low">Price: Low to High</option>
+            <option value="price_high">Price: High to Low</option>
+            <option value="spots_left">Most spots left</option>
+          </select>
+        </div>
+      </div>
+
       {isError && (
         <QueryErrorState
           title="Co-Subscription listings are unavailable"
@@ -45,7 +103,7 @@ export default function CoSubs() {
         />
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 font-body">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 font-body items-stretch">
         {loading ? (
           // Skeleton Loaders
           Array.from({ length: 6 }).map((_, i) => (
@@ -76,7 +134,7 @@ export default function CoSubs() {
           ))
         ) : (
           // Actual Content
-          groups.map((group, index) => {
+          filteredGroups.map((group, index) => {
             const Icon = iconMap[group.icon] || Users;
             const isSublet = group.type === 'sublet';
             const spotsLeft = isSublet ? (group.filledSpots === 0 ? 1 : 0) : (group.totalSpots - group.filledSpots);

@@ -1,17 +1,29 @@
+import React from 'react';
 import { motion } from 'motion/react';
 import { Trash2, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { getCartPreviewItems, type MarketplaceItem } from '../lib/api';
+import { getCartPreviewItems, removeFromCart, type MarketplaceItem } from '../lib/api';
 import { useApiQuery } from '../hooks/useApiQuery';
 import QueryErrorState from '../components/QueryErrorState';
 import ResponsiveImage from '../components/ResponsiveImage';
 
 export default function Cart() {
+  const [removingId, setRemovingId] = React.useState<string | null>(null);
   const { data: cartItems = [], isError, refetch } = useApiQuery<MarketplaceItem[]>({
     queryKey: ['cart-preview-items'],
     queryFn: getCartPreviewItems,
     errorMessage: 'Could not load cart items.',
   });
+
+  const handleRemove = async (itemId: string) => {
+    setRemovingId(itemId);
+    try {
+      await removeFromCart(itemId);
+      await refetch();
+    } finally {
+      setRemovingId(null);
+    }
+  };
 
   if (isError) {
     return (
@@ -57,7 +69,11 @@ export default function Cart() {
                   <span className="font-semibold text-gray-900">${item.price.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-end">
-                  <button className="text-red-500 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors">
+                  <button
+                    onClick={() => handleRemove(item.id)}
+                    disabled={removingId === item.id}
+                    className="text-red-500 hover:text-red-600 p-2 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>

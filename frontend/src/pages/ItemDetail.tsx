@@ -1,16 +1,19 @@
+import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Star, ShieldCheck, ShoppingCart, ArrowLeft, MessageSquare, Tag, RefreshCw, Heart } from 'lucide-react';
 import { cn } from '../lib/utils';
 import ResponsiveImage from '../components/ResponsiveImage';
 import { useFavorites } from '../context/FavoritesContext';
-import { getMarketplaceItemById, type MarketplaceItem } from '../lib/api';
+import { addToCart, getMarketplaceItemById, type MarketplaceItem } from '../lib/api';
 import { useApiQuery } from '../hooks/useApiQuery';
 import QueryErrorState from '../components/QueryErrorState';
 
 export default function ItemDetail() {
   const { id } = useParams();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const [isAdding, setIsAdding] = React.useState(false);
+  const [addError, setAddError] = React.useState<string | null>(null);
   const { data: item, isLoading: loading, isError, refetch } = useApiQuery<MarketplaceItem | undefined>({
     queryKey: ['marketplace-item', id],
     queryFn: () => (id ? getMarketplaceItemById(id) : Promise.resolve(undefined)),
@@ -35,6 +38,21 @@ export default function ItemDetail() {
   if (!loading && !item) {
     return <div className="text-center py-20 text-gray-500">Item not found</div>;
   }
+
+  const handleAddToCart = async () => {
+    if (!item || isAdding) {
+      return;
+    }
+    setIsAdding(true);
+    setAddError(null);
+    try {
+      await addToCart(item.id);
+    } catch (err: any) {
+      setAddError(err?.message ?? 'Could not add to cart.');
+    } finally {
+      setIsAdding(false);
+    }
+  };
 
   return (
     <motion.div
@@ -183,11 +201,20 @@ export default function ItemDetail() {
 
               {/* Actions */}
               <div className="mt-auto space-y-3">
+                {addError && (
+                  <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    {addError}
+                  </div>
+                )}
                 {item?.type === 'sell' && (
                   <>
-                    <button className="w-full py-4 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 shadow-sm">
+                    <button
+                      onClick={handleAddToCart}
+                      disabled={isAdding}
+                      className="w-full py-4 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
                       <ShoppingCart className="w-5 h-5" />
-                      Add to Cart
+                      {isAdding ? 'Adding...' : 'Add to Cart'}
                     </button>
                     <Link to="/checkout" className="w-full py-4 bg-white text-gray-900 border border-gray-200 rounded-xl font-medium hover:bg-gray-50 transition-colors flex items-center justify-center shadow-sm">
                       Buy Now

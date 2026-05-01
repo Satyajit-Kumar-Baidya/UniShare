@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Star, Send } from 'lucide-react';
-import { REVIEWS } from '../data/mock';
+import { getReviewsBySellerId, submitReview, type ReviewEntry } from '../lib/api';
+import { useApiQuery } from '../hooks/useApiQuery';
+import { useAuth } from '../context/AuthContext';
 
 interface ReviewsProps {
   targetId: string;
@@ -8,34 +10,73 @@ interface ReviewsProps {
 }
 
 export default function Reviews({ targetId, targetType }: ReviewsProps) {
-  const [reviews, setReviews] = useState(REVIEWS.filter(r => r.targetId === targetId && r.targetType === targetType));
+  const { user } = useAuth();
+  const [reviews, setReviews] = useState<ReviewEntry[]>([]);
   const [newReview, setNewReview] = useState('');
   const [rating, setRating] = useState(5);
   const [hoveredRating, setHoveredRating] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const { data, isLoading, isError } = useApiQuery<ReviewEntry[]>({
+    queryKey: ['reviews', targetType, targetId],
+    queryFn: () => {
+      if (targetType !== 'seller') {
+        return Promise.resolve([]);
+      }
+      return getReviewsBySellerId(targetId);
+    },
+    enabled: Boolean(targetId),
+    errorMessage: 'Could not load reviews.',
+  });
+
+  useEffect(() => {
+    if (data) {
+      setReviews(data);
+    }
+  }, [data]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newReview.trim()) return;
 
-    const review = {
-      id: Math.random().toString(36).substring(7),
-      targetId,
-      targetType,
-      author: 'You',
-      authorId: 'user_current',
-      rating,
-      comment: newReview,
-      date: new Date().toISOString(),
-    };
+    if (targetType !== 'seller') {
+      return;
+    }
 
-    setReviews([review, ...reviews]);
-    setNewReview('');
-    setRating(5);
+    setIsSubmitting(true);
+    setSubmitError(null);
+    try {
+      const created = await submitReview({
+        sellerId: targetId,
+        rating,
+        comment: newReview,
+      });
+      setReviews([created, ...reviews]);
+      setNewReview('');
+      setRating(5);
+    } catch (err: any) {
+      setSubmitError(err?.message ?? 'Could not submit review.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const averageRating = reviews.length > 0
     ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length
     : 0;
+
+  if (isLoading) {
+    return <div className="text-sm text-gray-500">Loading reviews...</div>;
+  }
+
+  if (isError) {
+    return (
+      <div className="text-sm text-rose-600">
+        Reviews are unavailable right now.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -62,6 +103,15 @@ export default function Reviews({ targetId, targetType }: ReviewsProps) {
       {/* Add Review Form */}
       <form onSubmit={handleSubmit} className="bg-gray-50 p-6 rounded-2xl border border-gray-100">
         <h3 className="text-sm font-semibold text-gray-900 mb-4">Write a Review</h3>
+
+        {!user && (
+          <p className="text-xs text-gray-500 mb-3">
+            Sign in to leave a review.
+          </p>
+        )}
+        {submitError && (
+          <p className="text-xs text-rose-600 mb-3">{submitError}</p>
+        )}
         
         <div className="flex items-center gap-2 mb-4">
           {[1, 2, 3, 4, 5].map((star) => (
@@ -89,11 +139,12 @@ export default function Reviews({ targetId, targetType }: ReviewsProps) {
             value={newReview}
             onChange={(e) => setNewReview(e.target.value)}
             placeholder="Share your experience..."
+            disabled={!user || isSubmitting}
             className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none min-h-[100px]"
           />
           <button
             type="submit"
-            disabled={!newReview.trim()}
+            disabled={!user || !newReview.trim() || isSubmitting}
             className="absolute bottom-3 right-3 p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Send className="w-4 h-4" />
@@ -111,12 +162,12 @@ export default function Reviews({ targetId, targetType }: ReviewsProps) {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center font-medium text-sm">
-                    {review.author.charAt(0)}
+                    {review.reviewerName.charAt(0)}
                   </div>
-                  <span className="font-medium text-gray-900 text-sm">{review.author}</span>
+                  <span className="font-medium text-gray-900 text-sm">{review.reviewerName}</span>
                 </div>
                 <span className="text-xs text-gray-400">
-                  {new Date(review.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  {new Date(review.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </span>
               </div>
               <div className="flex items-center gap-1 mb-2">

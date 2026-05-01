@@ -4,23 +4,41 @@ import { CreditCard, ShieldCheck, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
+import { createOrder } from '../lib/api';
 
 export default function Checkout() {
   const navigate = useNavigate();
   const { sendNotification } = useSocket();
   const { user } = useAuth();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
-  const handlePay = (e: React.FormEvent) => {
+  const handlePay = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Trigger order update notification
-    if (user) {
-      sendNotification(user.id, 'order_update', 'Order Confirmed', 'Your payment was successful and your order is being processed.');
+    if (isSubmitting) {
+      return;
     }
+    setIsSubmitting(true);
+    setError(null);
 
-    // Mock successful payment
-    const orderId = `UNI-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-    navigate(`/order-success?orderId=${orderId}`);
+    try {
+      const order = await createOrder();
+
+      if (user) {
+        sendNotification(
+          user.id,
+          'order_update',
+          'Order Confirmed',
+          'Your payment was successful and your order is being processed.',
+        );
+      }
+
+      navigate(`/order-success?orderId=${order.orderId}`);
+    } catch (err: any) {
+      setError(err?.message ?? 'Payment could not be completed.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -34,6 +52,11 @@ export default function Checkout() {
 
       <div className="bg-white rounded-2xl border border-gray-200 p-5 sm:p-8 shadow-sm">
         <form onSubmit={handlePay} className="space-y-8">
+          {error && (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {error}
+            </div>
+          )}
           {/* Payment Method */}
           <div>
             <h3 className="text-lg font-medium text-gray-900 mb-4">Payment Method</h3>
@@ -69,8 +92,12 @@ export default function Checkout() {
           </div>
 
           <div className="border-t border-gray-100 pt-6">
-            <button type="submit" className="w-full py-4 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 text-lg">
-              Pay Now
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full py-4 bg-gray-900 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 text-lg disabled:opacity-70 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? 'Processing...' : 'Pay Now'}
             </button>
             <p className="text-xs text-center text-gray-500 mt-4 flex items-center justify-center gap-1">
               <ShieldCheck className="w-4 h-4 text-emerald-500" /> Powered by Stripe

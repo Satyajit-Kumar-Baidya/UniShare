@@ -430,3 +430,153 @@ export async function rejectVerificationRequest(
 
   return { request, user };
 }
+
+export type OrderSummary = {
+  id: string;
+  totalAmount: number;
+  fee: number;
+  status: string;
+  createdAt: string;
+  itemCount: number;
+};
+
+export type OrderItem = {
+  id: string;
+  itemId: string;
+  title?: string;
+  type?: string;
+  image?: string;
+  priceAtPurchase: number;
+};
+
+export type OrderDetail = {
+  id: string;
+  totalAmount: number;
+  fee: number;
+  status: string;
+  createdAt: string;
+  items: OrderItem[];
+};
+
+export type ReviewEntry = {
+  id: string;
+  reviewerId: string;
+  reviewerName: string;
+  reviewerAvatar?: string;
+  sellerId: string;
+  itemId?: string;
+  itemTitle?: string;
+  rating: number;
+  comment?: string;
+  createdAt: string;
+};
+
+export async function updateUserProfile(
+  userId: string,
+  input: Partial<{
+    name: string;
+    phone: string;
+    address: string;
+    bio: string;
+    university: string;
+    major: string;
+    graduationYear: string;
+    avatar: string;
+  }>,
+): Promise<MockUser> {
+  return apiClient<MockUser>(`/users/${userId}`, { method: "PUT", data: input });
+}
+
+export async function addToCart(itemId: string): Promise<void> {
+  await apiClient<void>("/cart/", { method: "POST", data: { itemId } });
+}
+
+export async function removeFromCart(itemId: string): Promise<void> {
+  await apiClient<void>(`/cart/${itemId}`, { method: "DELETE" });
+}
+
+export async function createOrder(): Promise<{
+  orderId: string;
+  total: number;
+  fee: number;
+  subtotal: number;
+  itemCount: number;
+}> {
+  return apiClient<{
+    orderId: string;
+    total: number;
+    fee: number;
+    subtotal: number;
+    itemCount: number;
+  }>("/orders/", { method: "POST" });
+}
+
+export async function getOrders(): Promise<OrderSummary[]> {
+  const orders = await apiClient<any[]>("/orders/");
+  return orders.map((order) => ({
+    id: order.id,
+    totalAmount: Number(order.total_amount ?? order.totalAmount ?? 0),
+    fee: Number(order.fee ?? 0),
+    status: order.status,
+    createdAt: order.created_at ?? order.createdAt,
+    itemCount: Number(order.item_count ?? order.itemCount ?? 0),
+  }));
+}
+
+export async function getOrderById(orderId: string): Promise<OrderDetail> {
+  const order = await apiClient<any>(`/orders/${orderId}`);
+  return {
+    id: order.id,
+    totalAmount: Number(order.total_amount ?? order.totalAmount ?? 0),
+    fee: Number(order.fee ?? 0),
+    status: order.status,
+    createdAt: order.created_at ?? order.createdAt,
+    items: (order.items ?? []).map((item: any) => ({
+      id: item.id,
+      itemId: item.item_id ?? item.itemId,
+      title: item.title,
+      type: item.type,
+      image: item.image_url ?? item.image,
+      priceAtPurchase: Number(item.price_at_purchase ?? item.priceAtPurchase ?? 0),
+    })),
+  };
+}
+
+export async function getReviewsBySellerId(
+  sellerId: string,
+): Promise<ReviewEntry[]> {
+  return apiClient<ReviewEntry[]>(`/reviews/?seller=${sellerId}`);
+}
+
+export async function submitReview(input: {
+  sellerId: string;
+  itemId?: string;
+  rating: number;
+  comment?: string;
+}): Promise<ReviewEntry> {
+  return apiClient<ReviewEntry>("/reviews/", { method: "POST", data: input });
+}
+
+export async function addFavorite(itemId: string): Promise<void> {
+  await apiClient<void>("/favorites/", { method: "POST", data: { itemId } });
+}
+
+export async function removeFavorite(itemId: string): Promise<void> {
+  await apiClient<void>(`/favorites/${itemId}`, { method: "DELETE" });
+}
+
+export async function joinSubscriptionGroup(
+  groupId: string,
+): Promise<SubscriptionGroup> {
+  return apiClient<SubscriptionGroup>(`/co-subs/${groupId}/join`, {
+    method: "POST",
+  });
+}
+
+export async function leaveSubscriptionGroup(
+  groupId: string,
+): Promise<SubscriptionGroup> {
+  return apiClient<SubscriptionGroup>(`/co-subs/${groupId}/leave`, {
+    method: "DELETE",
+  });
+}

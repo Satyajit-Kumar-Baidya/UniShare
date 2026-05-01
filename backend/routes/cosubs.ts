@@ -148,6 +148,30 @@ router.post("/:id/join", requireAuth, (req: Request, res: Response) => {
   }
 });
 
+// DELETE /api/co-subs/:id/leave
+router.delete("/:id/leave", requireAuth, (req: Request, res: Response) => {
+  try {
+    const group = db
+      .prepare("SELECT * FROM subscription_groups WHERE id = ?")
+      .get(req.params.id) as any;
+    if (!group) {
+      res.status(404).json({ detail: "Group not found" });
+      return;
+    }
+
+    db.prepare(
+      "DELETE FROM group_members WHERE group_id = ? AND user_id = ?",
+    ).run(req.params.id, req.user!.id);
+
+    const updated = db
+      .prepare(GROUP_SELECT + " WHERE g.id = ? GROUP BY g.id")
+      .get(req.params.id) as any;
+    res.json(formatGroup(updated));
+  } catch (err: any) {
+    res.status(500).json({ detail: err.message });
+  }
+});
+
 // DELETE /api/co-subs/:id
 router.delete("/:id", requireAuth, (req: Request, res: Response) => {
   try {

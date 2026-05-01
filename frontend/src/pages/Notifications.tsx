@@ -6,10 +6,12 @@ import { useSocket } from '../context/SocketContext';
 import { getNotificationActionLabel, getNotificationTarget } from '../lib/notificationRouting';
 
 type FilterType = 'all' | 'unread' | 'message' | 'order_update' | 'group_update';
+type SortType = 'newest' | 'oldest' | 'unread_first';
 
 export default function Notifications() {
   const { notifications, markNotificationRead } = useSocket();
   const [filter, setFilter] = useState<FilterType>('all');
+  const [sort, setSort] = useState<SortType>('newest');
 
   const filteredNotifications = useMemo(() => {
     if (filter === 'all') {
@@ -20,6 +22,22 @@ export default function Notifications() {
     }
     return notifications.filter((notification) => notification.type === filter);
   }, [filter, notifications]);
+
+  const sortedNotifications = useMemo(() => {
+    const list = [...filteredNotifications];
+    switch (sort) {
+      case 'oldest':
+        list.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+        break;
+      case 'unread_first':
+        list.sort((a, b) => Number(a.read) - Number(b.read));
+        break;
+      default:
+        list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        break;
+    }
+    return list;
+  }, [filteredNotifications, sort]);
 
   const unreadCount = notifications.filter((notification) => !notification.read).length;
 
@@ -38,7 +56,7 @@ export default function Notifications() {
 
   return (
     <section className="relative isolate overflow-hidden py-10 sm:py-14">
-      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,_#e0f2fe_0,_transparent_40%),radial-gradient(circle_at_bottom_right,_#fef9c3_0,_transparent_40%)]" />
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,#e0f2fe_0,transparent_40%),radial-gradient(circle_at_bottom_right,#fef9c3_0,transparent_40%)]" />
 
       <div className="mx-auto max-w-5xl px-1 sm:px-0">
         <motion.div
@@ -51,7 +69,7 @@ export default function Notifications() {
           <p className="mt-2 text-slate-600">Stay on top of order updates, messages, and group events.</p>
         </motion.div>
 
-        <div className="mb-5 flex flex-wrap items-center gap-2">
+        <div className="mb-5 flex flex-wrap items-center gap-2 justify-between">
           {[
             { key: 'all', label: 'All' },
             { key: 'unread', label: `Unread (${unreadCount})` },
@@ -69,10 +87,21 @@ export default function Notifications() {
               {item.label}
             </button>
           ))}
+          <div className="ml-auto">
+            <select
+              value={sort}
+              onChange={(event) => setSort(event.target.value as SortType)}
+              className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 outline-none hover:bg-slate-50"
+            >
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="unread_first">Unread first</option>
+            </select>
+          </div>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-          {filteredNotifications.length === 0 ? (
+          {sortedNotifications.length === 0 ? (
             <div className="p-10 text-center">
               <Bell className="mx-auto h-9 w-9 text-slate-300" />
               <p className="mt-3 font-medium text-slate-900">No notifications in this view</p>
@@ -80,10 +109,7 @@ export default function Notifications() {
             </div>
           ) : (
             <ul className="divide-y divide-slate-100">
-              {filteredNotifications
-                .slice()
-                .reverse()
-                .map((notification, index) => (
+              {sortedNotifications.map((notification, index) => (
                   <motion.li
                     key={notification.id}
                     initial={{ opacity: 0, y: 10 }}
