@@ -11,6 +11,7 @@ import fs from "fs";
 import "./db/index.js";
 
 import { initSocket } from "./socket/index.js";
+import { setIo } from "./socket/emitter.js";
 import authRouter from "./routes/auth.js";
 import usersRouter from "./routes/users.js";
 import marketplaceRouter from "./routes/marketplace.js";
@@ -48,6 +49,9 @@ async function startServer() {
   const io = new Server(httpServer, {
     cors: { origin: "*", methods: ["GET", "POST"] },
   });
+
+  // expose io to routes that need to emit notifications
+  setIo(io);
 
   const requestedPort = Number(process.env.PORT ?? "8000");
   const PORT = await findAvailablePort(requestedPort);

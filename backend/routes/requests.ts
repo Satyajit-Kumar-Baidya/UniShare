@@ -3,6 +3,7 @@ import { z } from "zod";
 import db from "../db/index.js";
 import { requireAuth } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
+import { getIo } from "../socket/emitter.js";
 
 const router = Router();
 
@@ -56,6 +57,28 @@ router.post(
       db.prepare(
         "INSERT INTO borrow_requests (id, requester_id, item_id, message, status) VALUES (?, ?, ?, ?, 'pending')",
       ).run(requestId, requesterId, itemId, message || null);
+
+      // create a notification for the seller so they can see the request
+      const notifId = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+      const title = "New borrow request";
+      const notifMessage = `${req.user!.name || requesterId} requested to borrow ${item.id}`;
+      db.prepare(
+        `INSERT INTO notifications (id, recipient_id, type, title, message, created_at) VALUES (?, ?, 'request', ?, ?, ?)`,
+      ).run(notifId, item.seller_id, title, notifMessage, new Date().toISOString());
+
+      // emit live notification if socket server present
+      const io = getIo();
+      if (io) {
+        io.to(item.seller_id).emit("receive_notification", {
+          id: notifId,
+          type: "request",
+          title,
+          message: notifMessage,
+          read: false,
+          timestamp: new Date().toISOString(),
+          recipientId: item.seller_id,
+        });
+      }
 
       res.status(201).json({
         id: requestId,
@@ -111,6 +134,27 @@ router.post(
       db.prepare(
         "INSERT INTO trade_proposals (id, proposer_id, item_id, offer_description, status) VALUES (?, ?, ?, ?, 'pending')",
       ).run(proposalId, proposerId, itemId, offerDescription);
+
+      // notify seller
+      const notifId2 = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
+      const title2 = "New trade proposal";
+      const notifMessage2 = `${req.user!.name || proposerId} proposed a trade for ${item.id}`;
+      db.prepare(
+        `INSERT INTO notifications (id, recipient_id, type, title, message, created_at) VALUES (?, ?, 'trade', ?, ?, ?)`,
+      ).run(notifId2, item.seller_id, title2, notifMessage2, new Date().toISOString());
+
+      const io2 = getIo();
+      if (io2) {
+        io2.to(item.seller_id).emit("receive_notification", {
+          id: notifId2,
+          type: "trade",
+          title: title2,
+          message: notifMessage2,
+          read: false,
+          timestamp: new Date().toISOString(),
+          recipientId: item.seller_id,
+        });
+      }
 
       res.status(201).json({
         id: proposalId,

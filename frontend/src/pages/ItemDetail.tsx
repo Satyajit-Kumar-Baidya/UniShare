@@ -4,6 +4,7 @@ import { motion } from 'motion/react';
 import { Star, ShieldCheck, ShoppingCart, ArrowLeft, MessageSquare, Tag, RefreshCw, Heart } from 'lucide-react';
 import { cn } from '../lib/utils';
 import ResponsiveImage from '../components/ResponsiveImage';
+import ChatDrawer from '../components/ChatDrawer';
 import { useFavorites } from '../context/FavoritesContext';
 import { addToCart, getMarketplaceItemById, type MarketplaceItem, submitBorrowRequest, submitTradeProposal } from '../lib/api';
 import { useApiQuery } from '../hooks/useApiQuery';
@@ -20,6 +21,7 @@ export default function ItemDetail() {
   const [tradeError, setTradeError] = React.useState<string | null>(null);
   const [tradeOffer, setTradeOffer] = React.useState('');
   const [showTradeModal, setShowTradeModal] = React.useState(false);
+  const [isChatOpen, setIsChatOpen] = React.useState(false);
   const { data: item, isLoading: loading, isError, refetch } = useApiQuery<MarketplaceItem | undefined>({
     queryKey: ['marketplace-item', id],
     queryFn: () => (id ? getMarketplaceItemById(id) : Promise.resolve(undefined)),
@@ -244,7 +246,7 @@ export default function ItemDetail() {
                     )}
                   </div>
                 </div>
-                <button className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors">
+                <button onClick={() => setIsChatOpen(true)} className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors">
                   <MessageSquare className="w-5 h-5" />
                 </button>
               </div>
@@ -359,6 +361,14 @@ export default function ItemDetail() {
             </div>
           </motion.div>
         </div>
+      )}
+      {item && (
+        <ChatDrawer
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+          recipientId={item.sellerId}
+          recipientName={item.seller}
+        />
       )}
     </motion.div>
   );
