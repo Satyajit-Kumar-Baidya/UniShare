@@ -21,7 +21,30 @@ export const REVIEWS = [
   { id: 'r2', targetId: '3', targetType: 'item', author: 'Nadia R.', authorId: 'u2', rating: 4, comment: 'Calculator was clean and ready for exam week.', date: '2026-03-19T14:30:00Z' },
 ];
 
-export const MOCK_USERS = [
+export interface MockUser {
+  id: string;
+  name: string;
+  email: string;
+  role: 'user' | 'admin';
+  verificationStatus: 'unverified' | 'pending' | 'verified' | 'rejected';
+  isVerified: boolean;
+  joinedDate: string;
+  avatar?: string;
+  address?: string;
+  phone?: string;
+  bio?: string;
+  university?: string;
+  major?: string;
+  graduationYear?: string;
+  uiuEmail?: string;
+  uiuIdNumber?: string;
+  uiuIdImage?: string;
+  verificationNote?: string;
+  verificationSubmittedAt?: string;
+  verificationReviewedAt?: string;
+}
+
+export const MOCK_USERS: MockUser[] = [
   {
     id: 'admin-1',
     name: 'UIU Admin',

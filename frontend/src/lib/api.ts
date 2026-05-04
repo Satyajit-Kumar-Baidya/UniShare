@@ -4,6 +4,7 @@ import {
   REVIEWS,
   MOCK_USERS,
   VERIFICATION_REQUESTS,
+  type MockUser as MockUserData,
 } from "../data/mock";
 import { apiClient } from "./apiClient";
 
@@ -15,7 +16,7 @@ const USE_MOCK = false;
 export type MarketplaceItem = (typeof MARKETPLACE_ITEMS)[number];
 export type SubscriptionGroup = (typeof SUBSCRIPTION_GROUPS)[number];
 export type Review = (typeof REVIEWS)[number];
-export type MockUser = (typeof MOCK_USERS)[number];
+export type MockUser = MockUserData;
 export type VerificationRequest = (typeof VERIFICATION_REQUESTS)[number];
 
 export type SellerProfileData = {
@@ -297,6 +298,7 @@ export async function submitVerificationRequest(
     name: input.name,
     email: input.email,
     role: existingUser?.role ?? "user",
+    isVerified: false,
     uiuEmail: input.uiuEmail,
     uiuIdNumber: input.uiuIdNumber,
     uiuIdImage: input.uiuIdImage,

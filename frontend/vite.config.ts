@@ -3,9 +3,10 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import { defineConfig } from 'vite';
 
-export default defineConfig(() => {
+export default defineConfig(({ command }) => {
+  const isServe = command === 'serve';
   return {
-    base: '/UniShare/',
+    base: isServe ? '/' : '/UniShare/',
     root: __dirname,
     server: {
       port: 5173,
