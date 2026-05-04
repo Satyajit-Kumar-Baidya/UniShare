@@ -203,6 +203,12 @@ export function seedDatabase(db: Database) {
     },
   ];
 
+  // Cart items for u-seller to test checkout flow
+  const cartItems = [
+    { id: "cart-1", userId: "u-seller", itemId: "item-105" },
+    { id: "cart-2", userId: "u-seller", itemId: "item-102" },
+  ];
+
   const insertUser = db.prepare(`
     INSERT INTO users (
       id, name, email, password_hash, role, avatar, phone, address, bio,
@@ -234,6 +240,11 @@ export function seedDatabase(db: Database) {
     INSERT INTO reviews (
       id, reviewer_id, seller_id, item_id, rating, comment, created_at
     ) VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const insertCartItem = db.prepare(`
+    INSERT INTO cart_items (id, user_id, item_id)
+    VALUES (?, ?, ?)
   `);
 
   const seedTx = db.transaction(() => {
@@ -305,6 +316,10 @@ export function seedDatabase(db: Database) {
         review.comment,
         review.createdAt,
       );
+    }
+
+    for (const item of cartItems) {
+      insertCartItem.run(item.id, item.userId, item.itemId);
     }
   });
 

@@ -11,6 +11,7 @@ export type VerificationStatus =
   | "pending"
   | "verified"
   | "rejected";
+
 export type UserRole = "user" | "admin";
 
 export interface User {
@@ -77,6 +78,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
+  }, []);
+
+  // Listen for global unauthorized events and clear session
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      localStorage.removeItem("unishare_access_token");
+      setUser(null);
+      setLoading(false);
+    };
+
+    window.addEventListener("auth-unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("auth-unauthorized", handleUnauthorized);
   }, []);
 
   const login = (userData: User) => setUser(normalizeUser(userData));

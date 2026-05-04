@@ -103,14 +103,14 @@ export default function Inbox() {
       markThreadRead(selectedConversationId);
     }
     return () => {
-      if (selectedConversationId) {
+      if (selectedConversationId && typeof sendTyping === 'function') {
         sendTyping(selectedConversationId, false);
       }
     };
   }, [markThreadRead, selectedConversationId, sendTyping]);
 
   useEffect(() => {
-    if (messagesEndRef.current) {
+    if (messagesEndRef.current && typeof messagesEndRef.current.scrollIntoView === 'function') {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [allThreadMessages.length, selectedConversationId]);
@@ -125,20 +125,26 @@ export default function Inbox() {
       editMessage(editingMessageId, messageDraft.trim());
       setEditingMessageId(null);
     } else {
-      sendMessage(selectedConversationId, messageDraft.trim(), replyToMessageId);
+      if (replyToMessageId) {
+        sendMessage(selectedConversationId, messageDraft.trim(), replyToMessageId);
+      } else {
+        sendMessage(selectedConversationId, messageDraft.trim());
+      }
     }
 
     setMessageDraft('');
     setReplyToMessageId(null);
-    sendTyping(selectedConversationId, false);
+    if (selectedConversationId && typeof sendTyping === 'function') {
+      sendTyping(selectedConversationId, false);
+    }
   };
 
   const isTyping = selectedConversationId
-    ? Boolean(typingByUserId[selectedConversationId])
+    ? Boolean(typingByUserId?.[selectedConversationId])
     : false;
 
   const isParticipantOnline = selectedConversationId
-    ? onlineUsers.includes(selectedConversationId)
+    ? Boolean(onlineUsers?.includes(selectedConversationId))
     : false;
 
   const replyToMessage = replyToMessageId
@@ -492,7 +498,7 @@ export default function Inbox() {
                       value={messageDraft}
                       onChange={(event) => {
                         setMessageDraft(event.target.value);
-                        if (selectedConversationId) {
+                        if (selectedConversationId && typeof sendTyping === 'function') {
                           sendTyping(selectedConversationId, event.target.value.trim().length > 0);
                         }
                       }}

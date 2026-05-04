@@ -4,6 +4,7 @@ import {
   REVIEWS,
   MOCK_USERS,
   VERIFICATION_REQUESTS,
+  type MockUser as MockUserData,
 } from "../data/mock";
 import { apiClient } from "./apiClient";
 
@@ -15,7 +16,7 @@ const USE_MOCK = false;
 export type MarketplaceItem = (typeof MARKETPLACE_ITEMS)[number];
 export type SubscriptionGroup = (typeof SUBSCRIPTION_GROUPS)[number];
 export type Review = (typeof REVIEWS)[number];
-export type MockUser = (typeof MOCK_USERS)[number];
+export type MockUser = MockUserData;
 export type VerificationRequest = (typeof VERIFICATION_REQUESTS)[number];
 
 export type SellerProfileData = {
@@ -143,7 +144,13 @@ export async function getSellerProfileById(
 
 export async function getSubscriptionGroups(): Promise<SubscriptionGroup[]> {
   if (!USE_MOCK) {
-    return apiClient<SubscriptionGroup[]>("/co-subs/");
+    const res = await apiClient<any>("/co-subs/");
+    // Normalize different shapes: backend returns an array, but some proxies
+    // or legacy responses may wrap the array in an object (e.g. { value: [...] }).
+    if (Array.isArray(res)) return res as SubscriptionGroup[];
+    if (res && Array.isArray(res.value)) return res.value as SubscriptionGroup[];
+    // Fallback: if the payload contains a Count and a value property, return value
+    throw new Error("Unexpected response shape from /co-subs/");
   }
 
   await wait();
@@ -291,6 +298,7 @@ export async function submitVerificationRequest(
     name: input.name,
     email: input.email,
     role: existingUser?.role ?? "user",
+    isVerified: false,
     uiuEmail: input.uiuEmail,
     uiuIdNumber: input.uiuIdNumber,
     uiuIdImage: input.uiuIdImage,
@@ -471,6 +479,26 @@ export type ReviewEntry = {
   createdAt: string;
 };
 
+export type BorrowRequest = {
+  id: string;
+  requesterId: string;
+  itemId: string;
+  status: 'pending' | 'approved' | 'rejected' | 'borrowed' | 'returned';
+  message?: string;
+  createdAt: string;
+  reviewedAt?: string;
+};
+
+export type TradeProposal = {
+  id: string;
+  proposerId: string;
+  itemId: string;
+  offerDescription: string;
+  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  createdAt: string;
+  reviewedAt?: string;
+};
+
 export async function updateUserProfile(
   userId: string,
   input: Partial<{
@@ -578,5 +606,25 @@ export async function leaveSubscriptionGroup(
 ): Promise<SubscriptionGroup> {
   return apiClient<SubscriptionGroup>(`/co-subs/${groupId}/leave`, {
     method: "DELETE",
+  });
+}
+
+export async function submitBorrowRequest(
+  itemId: string,
+  message?: string,
+): Promise<BorrowRequest> {
+  return apiClient<BorrowRequest>("/borrow-requests/", {
+    method: "POST",
+    data: { itemId, message },
+  });
+}
+
+export async function submitTradeProposal(
+  itemId: string,
+  offerDescription: string,
+): Promise<TradeProposal> {
+  return apiClient<TradeProposal>("/trade-proposals/", {
+    method: "POST",
+    data: { itemId, offerDescription },
   });
 }

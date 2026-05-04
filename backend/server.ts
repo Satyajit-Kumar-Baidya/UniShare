@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import { createServer } from "http";
@@ -10,6 +11,7 @@ import fs from "fs";
 import "./db/index.js";
 
 import { initSocket } from "./socket/index.js";
+import { setIo } from "./socket/emitter.js";
 import authRouter from "./routes/auth.js";
 import usersRouter from "./routes/users.js";
 import marketplaceRouter from "./routes/marketplace.js";
@@ -20,6 +22,7 @@ import verificationsRouter from "./routes/verifications.js";
 import reviewsRouter from "./routes/reviews.js";
 import favoritesRouter from "./routes/favorites.js";
 import sellerRouter from "./routes/seller.js";
+import requestsRouter from "./routes/requests.js";
 
 async function findAvailablePort(
   startPort: number,
@@ -47,7 +50,10 @@ async function startServer() {
     cors: { origin: "*", methods: ["GET", "POST"] },
   });
 
-  const requestedPort = Number(process.env.PORT ?? "3000");
+  // expose io to routes that need to emit notifications
+  setIo(io);
+
+  const requestedPort = Number(process.env.PORT ?? "8000");
   const PORT = await findAvailablePort(requestedPort);
 
   // ── Body parsing (10 mb limit for base64 ID images) ───────────────
@@ -66,6 +72,7 @@ async function startServer() {
   app.use("/api/reviews", reviewsRouter);
   app.use("/api/favorites", favoritesRouter);
   app.use("/api/seller", sellerRouter);
+  app.use("/api", requestsRouter);
 
   // ── Socket.IO (authenticated, per-user rooms, DB-backed) ──────────
   initSocket(io);

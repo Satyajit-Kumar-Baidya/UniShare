@@ -4,8 +4,9 @@ import { motion } from 'motion/react';
 import { Star, ShieldCheck, ShoppingCart, ArrowLeft, MessageSquare, Tag, RefreshCw, Heart } from 'lucide-react';
 import { cn } from '../lib/utils';
 import ResponsiveImage from '../components/ResponsiveImage';
+import ChatDrawer from '../components/ChatDrawer';
 import { useFavorites } from '../context/FavoritesContext';
-import { addToCart, getMarketplaceItemById, type MarketplaceItem } from '../lib/api';
+import { addToCart, getMarketplaceItemById, type MarketplaceItem, submitBorrowRequest, submitTradeProposal } from '../lib/api';
 import { useApiQuery } from '../hooks/useApiQuery';
 import QueryErrorState from '../components/QueryErrorState';
 
@@ -14,6 +15,13 @@ export default function ItemDetail() {
   const { isFavorite, toggleFavorite } = useFavorites();
   const [isAdding, setIsAdding] = React.useState(false);
   const [addError, setAddError] = React.useState<string | null>(null);
+  const [isBorrowing, setIsBorrowing] = React.useState(false);
+  const [isTrading, setIsTrading] = React.useState(false);
+  const [borrowError, setBorrowError] = React.useState<string | null>(null);
+  const [tradeError, setTradeError] = React.useState<string | null>(null);
+  const [tradeOffer, setTradeOffer] = React.useState('');
+  const [showTradeModal, setShowTradeModal] = React.useState(false);
+  const [isChatOpen, setIsChatOpen] = React.useState(false);
   const { data: item, isLoading: loading, isError, refetch } = useApiQuery<MarketplaceItem | undefined>({
     queryKey: ['marketplace-item', id],
     queryFn: () => (id ? getMarketplaceItemById(id) : Promise.resolve(undefined)),
@@ -51,6 +59,50 @@ export default function ItemDetail() {
       setAddError(err?.message ?? 'Could not add to cart.');
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const handleRequestBorrow = async () => {
+    if (!item || isBorrowing) {
+      return;
+    }
+    setIsBorrowing(true);
+    setBorrowError(null);
+    try {
+      await submitBorrowRequest(item.id, `I would like to borrow ${item.title}`);
+      setBorrowError(null);
+      alert('Borrow request sent! The owner will review it.');
+    } catch (err: any) {
+      setBorrowError(err?.message ?? 'Could not send borrow request.');
+    } finally {
+      setIsBorrowing(false);
+    }
+  };
+
+  const handleProposeTrade = async () => {
+    if (!item || isTrading) {
+      return;
+    }
+    setShowTradeModal(true);
+  };
+
+  const handleSubmitTrade = async () => {
+    if (!item || isTrading || !tradeOffer.trim()) {
+      return;
+    }
+    
+    setIsTrading(true);
+    setTradeError(null);
+    try {
+      await submitTradeProposal(item.id, tradeOffer);
+      setTradeError(null);
+      setTradeOffer('');
+      setShowTradeModal(false);
+      alert('Trade proposal sent! The owner will review it.');
+    } catch (err: any) {
+      setTradeError(err?.message ?? 'Could not send trade proposal.');
+    } finally {
+      setIsTrading(false);
     }
   };
 
@@ -194,7 +246,7 @@ export default function ItemDetail() {
                     )}
                   </div>
                 </div>
-                <button className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors">
+                <button onClick={() => setIsChatOpen(true)} className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors">
                   <MessageSquare className="w-5 h-5" />
                 </button>
               </div>
@@ -204,6 +256,16 @@ export default function ItemDetail() {
                 {addError && (
                   <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
                     {addError}
+                  </div>
+                )}
+                {borrowError && (
+                  <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    {borrowError}
+                  </div>
+                )}
+                {tradeError && (
+                  <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    {tradeError}
                   </div>
                 )}
                 {item?.type === 'sell' && (
@@ -223,16 +285,24 @@ export default function ItemDetail() {
                 )}
 
                 {item?.type === 'share' && (
-                  <button className="w-full py-4 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 shadow-sm">
+                  <button
+                    onClick={handleRequestBorrow}
+                    disabled={isBorrowing}
+                    className="w-full py-4 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
                     <Heart className="w-5 h-5" />
-                    Request to Borrow
+                    {isBorrowing ? 'Requesting...' : 'Request to Borrow'}
                   </button>
                 )}
 
                 {item?.type === 'barter' && (
-                  <button className="w-full py-4 bg-amber-600 text-white rounded-xl font-medium hover:bg-amber-700 transition-colors flex items-center justify-center gap-2 shadow-sm">
+                  <button
+                    onClick={handleProposeTrade}
+                    disabled={isTrading}
+                    className="w-full py-4 bg-amber-600 text-white rounded-xl font-medium hover:bg-amber-700 transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                  >
                     <RefreshCw className="w-5 h-5" />
-                    Propose Trade
+                    {isTrading ? 'Proposing...' : 'Propose Trade'}
                   </button>
                 )}
               </div>
@@ -250,6 +320,56 @@ export default function ItemDetail() {
           )}
         </div>
       </div>
+
+      {/* Trade Proposal Modal */}
+      {showTradeModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-2xl max-w-md w-full shadow-xl border border-gray-200"
+          >
+            <div className="p-6 space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Propose a Trade</h3>
+                <p className="text-sm text-gray-500 mt-1">Describe what you have to offer for <strong>{item?.title}</strong></p>
+              </div>
+
+              <textarea
+                value={tradeOffer}
+                onChange={(e) => setTradeOffer(e.target.value)}
+                placeholder="E.g., I can offer a used textbook on..., I have lab equipment like..., etc."
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none resize-none"
+                rows={4}
+              />
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowTradeModal(false)}
+                  className="flex-1 py-2 px-4 text-gray-900 border border-gray-200 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmitTrade}
+                  disabled={isTrading || !tradeOffer.trim()}
+                  className="flex-1 py-2 px-4 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isTrading ? 'Sending...' : 'Send Proposal'}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+      {item && (
+        <ChatDrawer
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+          recipientId={item.sellerId}
+          recipientName={item.seller}
+        />
+      )}
     </motion.div>
   );
 }

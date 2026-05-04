@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { BadgeCheck, Check, Clock, ShieldAlert } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth, type User } from "../../context/AuthContext";
 import { getMockUserByEmail, updateUserProfile } from "../../lib/api";
 
 export default function Settings() {
@@ -26,8 +26,8 @@ export default function Settings() {
         return;
       }
       const latest = await getMockUserByEmail(user.email);
-      if (latest && isActive) {
-        updateUser(latest);
+            if (latest && isActive) {
+        updateUser(latest as Partial<User>);
       }
     };
 
@@ -88,7 +88,7 @@ export default function Settings() {
         graduationYear: editGraduationYear,
         bio: editBio,
       });
-      updateUser(updated);
+      updateUser(updated as Partial<User>);
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
     } catch (err: any) {

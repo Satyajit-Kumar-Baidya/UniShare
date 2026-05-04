@@ -43,7 +43,10 @@ const token = localStorage.getItem('unishare_access_token');
   if (!response.ok) {
     if (response.status === 401) {
       console.warn('Unauthorized API call. Token might be expired.');
-      // window.dispatchEvent(new Event('auth-unauthorized'));
+        // Notify the app so it can clear session and redirect to login
+        try {
+          window.dispatchEvent(new Event('auth-unauthorized'));
+        } catch {}
     }
 
     let errorMessage = response.statusText;
