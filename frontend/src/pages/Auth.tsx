@@ -39,8 +39,8 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<SocialProvider | null>(
     null,
-      });
-      setSocialLoading(null);
+  );
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const navigate = useNavigate();
   const { login } = useAuth();
