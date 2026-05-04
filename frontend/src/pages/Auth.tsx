@@ -15,11 +15,7 @@ import {
   UploadCloud,
 } from "lucide-react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
-<<<<<<< HEAD
 import { useAuth } from "../context/AuthContext";
-=======
-import { useAuth } from "../context/AuthContext";
->>>>>>> 0be0122be41c58c2752f616568afa17768dae0af
 import { loginUser, registerUser } from "../lib/api";
 
 type SocialProvider = "google" | "github";
@@ -43,8 +39,8 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<SocialProvider | null>(
     null,
-  );
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+      });
+      setSocialLoading(null);
 
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -196,11 +192,7 @@ export default function Auth() {
           uiuIdImage: uiuIdImage || undefined,
         });
         localStorage.setItem("unishare_access_token", token);
-<<<<<<< HEAD
-        login(userData as User);
-=======
         login(userData);
->>>>>>> 0be0122be41c58c2752f616568afa17768dae0af
         const hasVerificationData =
           Boolean(uiuEmail.trim()) &&
           Boolean(uiuIdNumber.trim()) &&
@@ -225,11 +217,7 @@ export default function Auth() {
         password,
       });
       localStorage.setItem("unishare_access_token", token);
-<<<<<<< HEAD
-      login(userData as User);
-=======
       login(userData);
->>>>>>> 0be0122be41c58c2752f616568afa17768dae0af
       navigate(from, { replace: true });
     } catch (err: any) {
       setError(err.message ?? "Invalid email or password.");

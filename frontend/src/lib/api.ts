@@ -302,11 +302,7 @@ export async function submitVerificationRequest(
         month: "long",
         year: "numeric",
       }),
-<<<<<<< HEAD
-  } as MockUser);
-=======
   };
->>>>>>> 0be0122be41c58c2752f616568afa17768dae0af
 
   if (existingIndex >= 0) {
     MOCK_USERS[existingIndex] = {

@@ -88,11 +88,7 @@ export default function Settings() {
         graduationYear: editGraduationYear,
         bio: editBio,
       });
-<<<<<<< HEAD
       updateUser(updated as Partial<User>);
-=======
-      updateUser(updated);
->>>>>>> 0be0122be41c58c2752f616568afa17768dae0af
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
     } catch (err: any) {
