@@ -3,9 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+<<<<<<< HEAD
   "engines": {
     "node": ">=20.19.0"
   },
+=======
+>>>>>>> 0be0122be41c58c2752f616568afa17768dae0af
   "scripts": {
     "dev": "tsx backend/server.ts",
     "dev:frontend": "vite --config frontend/vite.config.ts",

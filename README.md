@@ -53,6 +53,7 @@
 
 ### Prerequisites
 
+<<<<<<< HEAD
 You will need [Node.js](https://nodejs.org/) (v20.19.0 or newer) installed on your local machine.
 
 ### Environment Setup
@@ -64,6 +65,9 @@ You will need [Node.js](https://nodejs.org/) (v20.19.0 or newer) installed on yo
    ```
 2. Update `JWT_SECRET` in the root `.env` before using the app outside local development.
 3. Keep `VITE_API_URL=http://localhost:8000/api` in `frontend/.env` when running the frontend against the local backend.
+=======
+You will need [Node.js](https://nodejs.org/) (v18+) installed on your local machine.
+>>>>>>> 0be0122be41c58c2752f616568afa17768dae0af
 
 ### Installation
 

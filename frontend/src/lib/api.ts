@@ -286,11 +286,19 @@ export async function submitVerificationRequest(
   const userId = existingUser ? existingUser.id : `u-${Date.now()}`;
   const submittedAt = new Date().toISOString();
 
+<<<<<<< HEAD
   const nextUser = ({
     id: userId,
     name: input.name,
     email: input.email,
     role: (existingUser?.role as "user" | "admin") ?? "user",
+=======
+  const nextUser: MockUser = {
+    id: userId,
+    name: input.name,
+    email: input.email,
+    role: existingUser?.role ?? "user",
+>>>>>>> 0be0122be41c58c2752f616568afa17768dae0af
     uiuEmail: input.uiuEmail,
     uiuIdNumber: input.uiuIdNumber,
     uiuIdImage: input.uiuIdImage,
@@ -302,7 +310,11 @@ export async function submitVerificationRequest(
         month: "long",
         year: "numeric",
       }),
+<<<<<<< HEAD
   } as MockUser);
+=======
+  };
+>>>>>>> 0be0122be41c58c2752f616568afa17768dae0af
 
   if (existingIndex >= 0) {
     MOCK_USERS[existingIndex] = {

@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 import "dotenv/config";
+=======
+>>>>>>> 0be0122be41c58c2752f616568afa17768dae0af
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import { createServer } from "http";
@@ -48,7 +51,11 @@ async function startServer() {
     cors: { origin: "*", methods: ["GET", "POST"] },
   });
 
+<<<<<<< HEAD
   const requestedPort = Number(process.env.PORT ?? "8000");
+=======
+  const requestedPort = Number(process.env.PORT ?? "3000");
+>>>>>>> 0be0122be41c58c2752f616568afa17768dae0af
   const PORT = await findAvailablePort(requestedPort);
 
   // ── Body parsing (10 mb limit for base64 ID images) ───────────────
