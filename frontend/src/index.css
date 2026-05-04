@@ -1,0 +1,62 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  --font-display: "Playfair Display", "Times New Roman", serif;
+  --font-body: "Manrope", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+  overflow-y: scroll; /* Prevents scrollbar jumping */
+}
+
+body {
+  background-color: #FAFAFA;
+  color: #111827;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.font-body {
+  font-family: var(--font-body);
+}
+
+.hero-veil {
+  background: linear-gradient(120deg, rgba(2, 6, 23, 0.85) 0%, rgba(2, 6, 23, 0.6) 35%, rgba(2, 6, 23, 0.35) 60%, rgba(2, 6, 23, 0.75) 100%);
+}
+
+.hero-vignette {
+  background: radial-gradient(120% 120% at 50% 0%, rgba(15, 23, 42, 0.12) 0%, rgba(2, 6, 23, 0.7) 70%);
+}
+
+.hero-noise {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 3px 3px;
+  mix-blend-mode: soft-light;
+  opacity: 0.22;
+}
+
+/* Global focus styles */
+*:focus-visible {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  --tw-ring-inset: ;
+  --tw-ring-offset-width: 2px;
+  --tw-ring-offset-color: #fff;
+  --tw-ring-color: #6366f1;
+  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+  transition-property: box-shadow;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
