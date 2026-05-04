@@ -15,6 +15,7 @@ export default function ChatDrawer({ isOpen, onClose, recipientId, recipientName
   const { messages, sendMessage } = useSocket();
   const { user } = useAuth();
   const [inputValue, setInputValue] = useState('');
+  const [sendError, setSendError] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Filter messages for the current conversation
@@ -33,8 +34,13 @@ export default function ChatDrawer({ isOpen, onClose, recipientId, recipientName
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputValue.trim() && recipientId) {
-      sendMessage(recipientId, inputValue.trim());
-      setInputValue('');
+      const didSend = sendMessage(recipientId, inputValue.trim());
+      if (didSend) {
+        setInputValue('');
+        setSendError('');
+      } else {
+        setSendError('Please log in to send messages.');
+      }
     }
   };
 
@@ -116,25 +122,31 @@ export default function ChatDrawer({ isOpen, onClose, recipientId, recipientName
               <form onSubmit={handleSend} className="flex items-end gap-3 relative">
                 <textarea
                   value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
+                  onChange={(e) => {
+                    setInputValue(e.target.value);
+                    if (sendError) {
+                      setSendError('');
+                    }
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
                       handleSend(e as unknown as React.FormEvent);
                     }
                   }}
-                  placeholder="Type a message..."
+                  placeholder={user ? 'Type a message...' : 'Log in to send a message...'}
                   className="flex-1 resize-none overflow-hidden bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 text-sm focus:outline-none focus:ring-4 focus:ring-indigo-50/50 focus:border-indigo-300 transition-all min-h-[50px] max-h-[120px]"
                   rows={1}
                 />
                 <button
                   type="submit"
-                  disabled={!inputValue.trim()}
+                  disabled={!inputValue.trim() || !recipientId}
                   className="w-[50px] h-[50px] rounded-2xl bg-indigo-600 text-white flex items-center justify-center shrink-0 hover:bg-indigo-700 transition-all shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none"
                 >
                   <Send className="w-5 h-5 ml-0.5" />
                 </button>
               </form>
+              {sendError ? <p className="mt-2 text-xs text-rose-500">{sendError}</p> : null}
             </div>
           </motion.div>
         </>

@@ -121,21 +121,25 @@ export default function Inbox() {
       return;
     }
 
+    let didSend = true;
+
     if (editingMessageId) {
       editMessage(editingMessageId, messageDraft.trim());
       setEditingMessageId(null);
     } else {
       if (replyToMessageId) {
-        sendMessage(selectedConversationId, messageDraft.trim(), replyToMessageId);
+        didSend = sendMessage(selectedConversationId, messageDraft.trim(), replyToMessageId);
       } else {
-        sendMessage(selectedConversationId, messageDraft.trim());
+        didSend = sendMessage(selectedConversationId, messageDraft.trim());
       }
     }
 
-    setMessageDraft('');
-    setReplyToMessageId(null);
-    if (selectedConversationId && typeof sendTyping === 'function') {
-      sendTyping(selectedConversationId, false);
+    if (didSend) {
+      setMessageDraft('');
+      setReplyToMessageId(null);
+      if (selectedConversationId && typeof sendTyping === 'function') {
+        sendTyping(selectedConversationId, false);
+      }
     }
   };
 

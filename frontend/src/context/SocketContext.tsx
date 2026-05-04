@@ -33,7 +33,7 @@ interface SocketContextType {
   socket: Socket | null;
   messages: Message[];
   notifications: Notification[];
-  sendMessage: (receiverId: string, content: string, replyToId?: string | null) => void;
+  sendMessage: (receiverId: string, content: string, replyToId?: string | null) => boolean;
   editMessage: (messageId: string, content: string) => void;
   deleteMessage: (messageId: string) => void;
   reactToMessage: (messageId: string, emoji: string) => void;
@@ -187,52 +187,56 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     content: string,
     replyToId?: string | null,
   ) => {
-    if (socket && user) {
-      const tempId = `temp-${Date.now()}`;
-      const timestamp = new Date().toISOString();
+    if (!socket || !user) {
+      return false;
+    }
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: tempId,
-          senderId: user.id,
-          senderName: user.name,
-          receiverId,
-          content,
-          timestamp,
-          read: false,
-          status: "sending",
-        },
-      ]);
+    const tempId = `temp-${Date.now()}`;
+    const timestamp = new Date().toISOString();
 
-      socket.emit(
-        "send_message",
-        {
-          receiverId,
-          content,
-          replyToId: replyToId ?? null,
-        },
-        (serverMsg: Message) => {
-          setMessages((prev) =>
-            prev.map((message) =>
-              message.id === tempId
-                ? { ...serverMsg, status: "sent" }
-                : message,
-            ),
-          );
-        },
-      );
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: tempId,
+        senderId: user.id,
+        senderName: user.name,
+        receiverId,
+        content,
+        timestamp,
+        read: false,
+        status: "sending",
+      },
+    ]);
 
-      setTimeout(() => {
+    socket.emit(
+      "send_message",
+      {
+        receiverId,
+        content,
+        replyToId: replyToId ?? null,
+      },
+      (serverMsg: Message) => {
         setMessages((prev) =>
           prev.map((message) =>
-            message.id === tempId && message.status === "sending"
-              ? { ...message, status: "failed" }
+            message.id === tempId
+              ? { ...serverMsg, status: "sent" }
               : message,
           ),
         );
-      }, 5000);
-    }
+      },
+    );
+
+    setTimeout(() => {
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === tempId && message.status === "sending"
+            ? { ...message, status: "failed" }
+            : message,
+        ),
+      );
+    }, 5000);
+
+    return true;
   };
 
   const editMessage = (messageId: string, content: string) => {
