@@ -160,11 +160,7 @@ export default function Auth() {
           month: "long",
           year: "numeric",
         }),
-<<<<<<< HEAD
-      } as User);
-=======
       });
->>>>>>> 0be0122be41c58c2752f616568afa17768dae0af
 
       setSocialLoading(null);
       navigate(from, { replace: true });
