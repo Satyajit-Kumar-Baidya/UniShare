@@ -143,7 +143,13 @@ export async function getSellerProfileById(
 
 export async function getSubscriptionGroups(): Promise<SubscriptionGroup[]> {
   if (!USE_MOCK) {
-    return apiClient<SubscriptionGroup[]>("/co-subs/");
+    const res = await apiClient<any>("/co-subs/");
+    // Normalize different shapes: backend returns an array, but some proxies
+    // or legacy responses may wrap the array in an object (e.g. { value: [...] }).
+    if (Array.isArray(res)) return res as SubscriptionGroup[];
+    if (res && Array.isArray(res.value)) return res.value as SubscriptionGroup[];
+    // Fallback: if the payload contains a Count and a value property, return value
+    throw new Error("Unexpected response shape from /co-subs/");
   }
 
   await wait();
