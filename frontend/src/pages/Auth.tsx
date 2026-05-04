@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 <<<<<<< HEAD
-import { useAuth, type User } from "../context/AuthContext";
+import { useAuth } from "../context/AuthContext";
 =======
 import { useAuth } from "../context/AuthContext";
 >>>>>>> 0be0122be41c58c2752f616568afa17768dae0af

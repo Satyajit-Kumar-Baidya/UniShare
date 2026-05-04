@@ -12,7 +12,7 @@ export type VerificationStatus =
   | "verified"
   | "rejected";
 <<<<<<< HEAD
-export type UserRole = string;
+export type UserRole = "user" | "admin";
 =======
 export type UserRole = "user" | "admin";
 >>>>>>> 0be0122be41c58c2752f616568afa17768dae0af
