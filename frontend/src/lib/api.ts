@@ -479,6 +479,26 @@ export type ReviewEntry = {
   createdAt: string;
 };
 
+export type BorrowRequest = {
+  id: string;
+  requesterId: string;
+  itemId: string;
+  status: 'pending' | 'approved' | 'rejected' | 'borrowed' | 'returned';
+  message?: string;
+  createdAt: string;
+  reviewedAt?: string;
+};
+
+export type TradeProposal = {
+  id: string;
+  proposerId: string;
+  itemId: string;
+  offerDescription: string;
+  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  createdAt: string;
+  reviewedAt?: string;
+};
+
 export async function updateUserProfile(
   userId: string,
   input: Partial<{
@@ -586,5 +606,25 @@ export async function leaveSubscriptionGroup(
 ): Promise<SubscriptionGroup> {
   return apiClient<SubscriptionGroup>(`/co-subs/${groupId}/leave`, {
     method: "DELETE",
+  });
+}
+
+export async function submitBorrowRequest(
+  itemId: string,
+  message?: string,
+): Promise<BorrowRequest> {
+  return apiClient<BorrowRequest>("/borrow-requests/", {
+    method: "POST",
+    data: { itemId, message },
+  });
+}
+
+export async function submitTradeProposal(
+  itemId: string,
+  offerDescription: string,
+): Promise<TradeProposal> {
+  return apiClient<TradeProposal>("/trade-proposals/", {
+    method: "POST",
+    data: { itemId, offerDescription },
   });
 }

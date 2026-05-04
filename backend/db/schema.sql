@@ -147,3 +147,23 @@ CREATE TABLE IF NOT EXISTS reviews (
   comment     TEXT,
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS borrow_requests (
+  id          TEXT PRIMARY KEY,
+  requester_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  item_id     TEXT NOT NULL REFERENCES marketplace_items(id) ON DELETE CASCADE,
+  status      TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected','borrowed','returned')),
+  message     TEXT,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  reviewed_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS trade_proposals (
+  id          TEXT PRIMARY KEY,
+  proposer_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  item_id     TEXT NOT NULL REFERENCES marketplace_items(id) ON DELETE CASCADE,
+  offer_description TEXT NOT NULL,
+  status      TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected','completed')),
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  reviewed_at TEXT
+);

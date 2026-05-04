@@ -21,6 +21,7 @@ import verificationsRouter from "./routes/verifications.js";
 import reviewsRouter from "./routes/reviews.js";
 import favoritesRouter from "./routes/favorites.js";
 import sellerRouter from "./routes/seller.js";
+import requestsRouter from "./routes/requests.js";
 
 async function findAvailablePort(
   startPort: number,
@@ -67,6 +68,7 @@ async function startServer() {
   app.use("/api/reviews", reviewsRouter);
   app.use("/api/favorites", favoritesRouter);
   app.use("/api/seller", sellerRouter);
+  app.use("/api", requestsRouter);
 
   // ── Socket.IO (authenticated, per-user rooms, DB-backed) ──────────
   initSocket(io);
