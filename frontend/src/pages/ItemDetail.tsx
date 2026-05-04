@@ -18,6 +18,8 @@ export default function ItemDetail() {
   const [isTrading, setIsTrading] = React.useState(false);
   const [borrowError, setBorrowError] = React.useState<string | null>(null);
   const [tradeError, setTradeError] = React.useState<string | null>(null);
+  const [tradeOffer, setTradeOffer] = React.useState('');
+  const [showTradeModal, setShowTradeModal] = React.useState(false);
   const { data: item, isLoading: loading, isError, refetch } = useApiQuery<MarketplaceItem | undefined>({
     queryKey: ['marketplace-item', id],
     queryFn: () => (id ? getMarketplaceItemById(id) : Promise.resolve(undefined)),
@@ -79,14 +81,21 @@ export default function ItemDetail() {
     if (!item || isTrading) {
       return;
     }
-    const offer = prompt('What do you have to offer for this trade?');
-    if (!offer) return;
+    setShowTradeModal(true);
+  };
+
+  const handleSubmitTrade = async () => {
+    if (!item || isTrading || !tradeOffer.trim()) {
+      return;
+    }
     
     setIsTrading(true);
     setTradeError(null);
     try {
-      await submitTradeProposal(item.id, offer);
+      await submitTradeProposal(item.id, tradeOffer);
       setTradeError(null);
+      setTradeOffer('');
+      setShowTradeModal(false);
       alert('Trade proposal sent! The owner will review it.');
     } catch (err: any) {
       setTradeError(err?.message ?? 'Could not send trade proposal.');
@@ -309,6 +318,48 @@ export default function ItemDetail() {
           )}
         </div>
       </div>
+
+      {/* Trade Proposal Modal */}
+      {showTradeModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white rounded-2xl max-w-md w-full shadow-xl border border-gray-200"
+          >
+            <div className="p-6 space-y-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Propose a Trade</h3>
+                <p className="text-sm text-gray-500 mt-1">Describe what you have to offer for <strong>{item?.title}</strong></p>
+              </div>
+
+              <textarea
+                value={tradeOffer}
+                onChange={(e) => setTradeOffer(e.target.value)}
+                placeholder="E.g., I can offer a used textbook on..., I have lab equipment like..., etc."
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none resize-none"
+                rows={4}
+              />
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowTradeModal(false)}
+                  className="flex-1 py-2 px-4 text-gray-900 border border-gray-200 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmitTrade}
+                  disabled={isTrading || !tradeOffer.trim()}
+                  className="flex-1 py-2 px-4 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  {isTrading ? 'Sending...' : 'Send Proposal'}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </motion.div>
   );
 }
